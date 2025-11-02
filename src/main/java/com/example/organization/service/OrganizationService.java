@@ -5,7 +5,6 @@ import com.example.organization.exception.ResourceNotFoundException;
 import com.example.organization.mapper.OrganizationMapper;
 import com.example.organization.model.*;
 import com.example.organization.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -15,8 +14,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class OrganizationService {
     
@@ -25,20 +26,6 @@ public class OrganizationService {
     private final AddressRepository addressRepository;
     private final LocationRepository locationRepository;
     private final OrganizationMapper mapper;
-    
-    @Autowired
-    public OrganizationService(
-            OrganizationRepository organizationRepository,
-            CoordinatesRepository coordinatesRepository,
-            AddressRepository addressRepository,
-            LocationRepository locationRepository,
-            OrganizationMapper mapper) {
-        this.organizationRepository = organizationRepository;
-        this.coordinatesRepository = coordinatesRepository;
-        this.addressRepository = addressRepository;
-        this.locationRepository = locationRepository;
-        this.mapper = mapper;
-    }
     
     @Transactional(readOnly = true)
     public Page<OrganizationDto> findAll(Pageable pageable) {

@@ -2,11 +2,14 @@ package com.example.organization.controller;
 
 import com.example.organization.dto.OrganizationDto;
 import com.example.organization.model.OrganizationType;
-import com.example.organization.service.OrganizationService;
-import com.example.organization.service.LocationService;
-import com.example.organization.service.CoordinatesService;
 import com.example.organization.service.AddressService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.organization.service.CoordinatesService;
+import com.example.organization.service.LocationService;
+import com.example.organization.service.OrganizationService;
+import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,30 +17,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/organizations")
+@RequiredArgsConstructor
 public class RestOrganizationController {
     
     private final OrganizationService organizationService;
     private final LocationService locationService;
     private final CoordinatesService coordinatesService;
     private final AddressService addressService;
-    
-    @Autowired
-    public RestOrganizationController(
-            OrganizationService organizationService,
-            LocationService locationService,
-            CoordinatesService coordinatesService,
-            AddressService addressService) {
-        this.organizationService = organizationService;
-        this.locationService = locationService;
-        this.coordinatesService = coordinatesService;
-        this.addressService = addressService;
-    }
     
     @GetMapping
     public ResponseEntity<Page<OrganizationDto>> listOrganizations(
@@ -130,4 +118,3 @@ public class RestOrganizationController {
         return ResponseEntity.ok(OrganizationType.values());
     }
 }
-

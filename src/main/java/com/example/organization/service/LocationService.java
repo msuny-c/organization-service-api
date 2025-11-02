@@ -5,25 +5,19 @@ import com.example.organization.exception.ResourceNotFoundException;
 import com.example.organization.mapper.OrganizationMapper;
 import com.example.organization.model.Location;
 import com.example.organization.repository.LocationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class LocationService {
     
     private final LocationRepository locationRepository;
     private final OrganizationMapper mapper;
-    
-    @Autowired
-    public LocationService(LocationRepository locationRepository, OrganizationMapper mapper) {
-        this.locationRepository = locationRepository;
-        this.mapper = mapper;
-    }
     
     @Transactional(readOnly = true)
     public List<LocationDto> findAll() {

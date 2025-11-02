@@ -3,23 +3,18 @@ package com.example.organization.controller;
 import com.example.organization.dto.OrganizationDto;
 import com.example.organization.model.OrganizationType;
 import com.example.organization.service.OrganizationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @RestController
 @RequestMapping("/operations/api")
+@RequiredArgsConstructor
 public class SpecialOperationsController {
     
     private final OrganizationService organizationService;
-    
-    @Autowired
-    public SpecialOperationsController(OrganizationService organizationService) {
-        this.organizationService = organizationService;
-    }
     
     @PostMapping("/minimal-coordinates")
     public ResponseEntity<?> findMinimalCoordinates() {

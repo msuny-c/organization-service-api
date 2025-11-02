@@ -5,25 +5,19 @@ import com.example.organization.exception.ResourceNotFoundException;
 import com.example.organization.mapper.OrganizationMapper;
 import com.example.organization.model.Coordinates;
 import com.example.organization.repository.CoordinatesRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CoordinatesService {
     
     private final CoordinatesRepository coordinatesRepository;
     private final OrganizationMapper mapper;
-    
-    @Autowired
-    public CoordinatesService(CoordinatesRepository coordinatesRepository, OrganizationMapper mapper) {
-        this.coordinatesRepository = coordinatesRepository;
-        this.mapper = mapper;
-    }
     
     @Transactional(readOnly = true)
     public List<CoordinatesDto> findAll() {

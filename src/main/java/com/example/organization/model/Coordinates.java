@@ -4,7 +4,13 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "coordinates")
 public class Coordinates {
@@ -22,35 +28,4 @@ public class Coordinates {
     @Min(-539)
     @Column(nullable = false)
     private long y;
-    
-    public Coordinates() {}
-    
-    public Coordinates(Double x, long y) {
-        this.x = x;
-        this.y = y;
-    }
-    
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public Double getX() {
-        return x;
-    }
-    
-    public void setX(Double x) {
-        this.x = x;
-    }
-    
-    public long getY() {
-        return y;
-    }
-    
-    public void setY(long y) {
-        this.y = y;
-    }
 }
