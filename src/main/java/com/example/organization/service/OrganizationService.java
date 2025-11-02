@@ -25,7 +25,6 @@ public class OrganizationService {
     private final AddressRepository addressRepository;
     private final LocationRepository locationRepository;
     private final OrganizationMapper mapper;
-    private final WebSocketEventService webSocketEventService;
     
     @Autowired
     public OrganizationService(
@@ -33,14 +32,12 @@ public class OrganizationService {
             CoordinatesRepository coordinatesRepository,
             AddressRepository addressRepository,
             LocationRepository locationRepository,
-            OrganizationMapper mapper,
-            WebSocketEventService webSocketEventService) {
+            OrganizationMapper mapper) {
         this.organizationRepository = organizationRepository;
         this.coordinatesRepository = coordinatesRepository;
         this.addressRepository = addressRepository;
         this.locationRepository = locationRepository;
         this.mapper = mapper;
-        this.webSocketEventService = webSocketEventService;
     }
     
     @Transactional(readOnly = true)
@@ -78,9 +75,7 @@ public class OrganizationService {
         }
         
         Organization saved = organizationRepository.save(organization);
-        OrganizationDto result = mapper.toDto(saved);
-        webSocketEventService.notifyOrganizationCreated(result);
-        return result;
+        return mapper.toDto(saved);
     }
     
     public OrganizationDto update(Long id, OrganizationDto dto) {
@@ -111,9 +106,7 @@ public class OrganizationService {
         }
         
         Organization updated = organizationRepository.save(existing);
-        OrganizationDto result = mapper.toDto(updated);
-        webSocketEventService.notifyOrganizationUpdated(result);
-        return result;
+        return mapper.toDto(updated);
     }
     
     public void delete(Long id) {
@@ -125,7 +118,6 @@ public class OrganizationService {
         Address postalAddress = organization.getPostalAddress();
         
         organizationRepository.delete(organization);
-        webSocketEventService.notifyOrganizationDeleted(id);
         
         cleanupOrphanedObjects(coordinates, officialAddress, postalAddress);
     }
@@ -160,9 +152,7 @@ public class OrganizationService {
         
         organization.setEmployeesCount(0);
         Organization updated = organizationRepository.save(organization);
-        OrganizationDto result = mapper.toDto(updated);
-        webSocketEventService.notifyEmployeesDismissed(result);
-        return result;
+        return mapper.toDto(updated);
     }
     
     public OrganizationDto absorb(Long absorbingId, Long absorbedId) {
@@ -186,9 +176,7 @@ public class OrganizationService {
         cleanupOrphanedObjects(coordinates, officialAddress, postalAddress);
         
         Organization updated = organizationRepository.save(absorbing);
-        OrganizationDto result = mapper.toDto(updated);
-        webSocketEventService.notifyOrganizationAbsorbed(result, absorbedId);
-        return result;
+        return mapper.toDto(updated);
     }
     
     private Coordinates getOrCreateCoordinates(OrganizationDto dto) {
