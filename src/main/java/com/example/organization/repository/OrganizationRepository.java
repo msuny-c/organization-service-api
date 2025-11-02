@@ -41,7 +41,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
            "(o.fullName IS NOT NULL AND LOWER(o.fullName) LIKE LOWER(CONCAT('%', :term, '%')))")
     Page<Organization> findBySearchTerm(@Param("term") String term, Pageable pageable);
     
-    @Query("SELECT o.rating, COUNT(o) FROM Organization o GROUP BY o.rating ORDER BY o.rating")
+    @Query("SELECT o.rating, COUNT(o) FROM Organization o WHERE o.rating IS NOT NULL GROUP BY o.rating ORDER BY o.rating")
     List<Object[]> countByRatingGrouped();
     
     long countByType(OrganizationType type);

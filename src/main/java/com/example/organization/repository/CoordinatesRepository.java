@@ -17,5 +17,5 @@ public interface CoordinatesRepository extends JpaRepository<Coordinates, Long> 
     @Query("SELECT c FROM Coordinates c ORDER BY c.x ASC, c.y ASC")
     java.util.List<Coordinates> findAllOrderedByXThenY();
     
-    Optional<Coordinates> findByXAndY(Integer x, Double y);
+    Optional<Coordinates> findByXAndY(Long x, Long y);
 }

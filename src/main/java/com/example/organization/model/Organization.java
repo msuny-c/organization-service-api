@@ -36,20 +36,24 @@ public class Organization {
     
     @Positive
     @Column(name = "annual_turnover")
-    private Integer annualTurnover;
+    private Long annualTurnover;
     
+    @NotNull
     @Min(0)
     @Column(name = "employees_count", nullable = false)
-    private int employeesCount;
+    private Integer employeesCount;
     
     @Positive
-    @Column(nullable = false)
-    private long rating;
+    @Column
+    private Integer rating;
     
-    @Column(name = "full_name", unique = true)
+    @Pattern(regexp = "^(?!\\s*$).+", message = "Полное название не может быть пустой строкой")
+    @Column(name = "full_name")
     private String fullName;
     
+    @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrganizationType type;
     
     @NotNull

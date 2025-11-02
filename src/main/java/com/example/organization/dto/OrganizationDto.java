@@ -26,18 +26,19 @@ public class OrganizationDto {
     private AddressDto officialAddress;
     
     @Positive(message = "Годовой оборот должен быть положительным")
-    private Integer annualTurnover;
+    private Long annualTurnover;
     
+    @NotNull(message = "Количество сотрудников обязательно")
     @Min(value = 0, message = "Количество сотрудников не может быть отрицательным")
     private Integer employeesCount;
     
     @Positive(message = "Рейтинг должен быть положительным")
-    @NotNull(message = "Рейтинг не может быть null")
-    private Long rating;
+    private Integer rating;
     
-    @Pattern(regexp = "^$|^(?!\\s*$).+", message = "Полное название не может быть пустой строкой")
+    @Pattern(regexp = "^(?!\\s*$).+", message = "Полное название не может быть пустой строкой")
     private String fullName;
     
+    @NotNull(message = "Тип организации обязателен")
     private OrganizationType type;
     
     private Long postalAddressId;

@@ -31,7 +31,7 @@ public class SpecialOperationsController {
     @PostMapping("/group-by-rating")
     public ResponseEntity<?> groupByRating() {
         try {
-            Map<Long, Long> ratingGroups = organizationService.groupByRating();
+            Map<Integer, Long> ratingGroups = organizationService.groupByRating();
             return ResponseEntity.ok(ratingGroups);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();

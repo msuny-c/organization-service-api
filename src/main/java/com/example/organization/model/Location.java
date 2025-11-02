@@ -19,11 +19,11 @@ public class Location {
     
     @NotNull
     @Column(nullable = false)
-    private Integer x;
+    private Long x;
     
     @NotNull
     @Column(nullable = false)
-    private Integer y;
+    private Long y;
     
     @NotNull
     @Column(nullable = false)

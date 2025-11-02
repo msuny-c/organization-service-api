@@ -7,24 +7,24 @@ public class Organization {
     private Coordinates coordinates; //Поле не может быть null
     private java.time.LocalDate creationDate; //Поле не может быть null, Значение этого поля должно генерироваться автоматически
     private Address officialAddress; //Поле может быть null
-    private Integer annualTurnover; //Поле может быть null, Значение поля должно быть больше 0
-    private int employeesCount; //Значение поля должно быть >= 0
-    private long rating; //Значение поля должно быть больше 0
-    private String fullName; //Строка не может быть пустой, Значение этого поля должно быть уникальным, Поле может быть null
-    private OrganizationType type; //Поле может быть null
+    private Long annualTurnover; //Поле может быть null, Значение поля должно быть больше 0
+    private Integer employeesCount; //Поле не может быть null, Значение поля должно быть больше 0
+    private Integer rating; //Поле может быть null, Значение поля должно быть больше 0
+    private String fullName; //Строка не может быть пустой, Поле может быть null
+    private OrganizationType type; //Поле не может быть null
     private Address postalAddress; //Поле не может быть null
 }
 public class Coordinates {
-    private Double x; //Максимальное значение поля: 882, Поле не может быть null
-    private long y; //Значение поля должно быть больше -540
+    private Long x; //Поле не может быть null
+    private Long y; //Поле не может быть null
 }
 public class Address {
     private String zipCode; //Длина строки должна быть не меньше 7, Поле может быть null
     private Location town; //Поле не может быть null
 }
 public class Location {
-    private Integer x; //Поле не может быть null
-    private Integer y; //Поле не может быть null
+    private Long x; //Поле не может быть null
+    private Long y; //Поле не может быть null
     private Double z; //Поле не может быть null
     private String name; //Поле не может быть null
 }

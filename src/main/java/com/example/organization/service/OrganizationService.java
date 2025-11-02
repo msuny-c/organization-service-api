@@ -119,12 +119,12 @@ public class OrganizationService {
     }
     
     @Transactional(readOnly = true)
-    public Map<Long, Long> groupByRating() {
+    public Map<Integer, Long> groupByRating() {
         List<Object[]> results = organizationRepository.countByRatingGrouped();
         return results.stream()
                 .collect(Collectors.toMap(
-                    result -> (Long) result[0],
-                    result -> (Long) result[1]
+                    result -> ((Number) result[0]).intValue(),
+                    result -> ((Number) result[1]).longValue()
                 ));
     }
     
@@ -182,7 +182,11 @@ public class OrganizationService {
         if (addressId != null) {
             return addressRepository.findById(addressId)
                     .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + addressId + " не найден"));
-        } else if (addressDto != null && addressDto.getZipCode() != null && addressDto.getZipCode().length() >= 7) {
+        } else if (addressDto != null) {
+            if (addressDto.getZipCode() != null && addressDto.getZipCode().length() < 7) {
+                throw new IllegalArgumentException("Почтовый индекс должен содержать минимум 7 символов");
+            }
+            
             Address address = mapper.toEntity(addressDto);
             
             if (addressDto.getTownId() != null) {
@@ -199,7 +203,7 @@ public class OrganizationService {
             
             return addressRepository.save(address);
         }
-        return null;
+        throw new IllegalArgumentException("Необходимо указать адрес");
     }
     
     private boolean isLocationValid(com.example.organization.dto.LocationDto locationDto) {

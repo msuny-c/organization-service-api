@@ -15,10 +15,10 @@ public class LocationDto {
     private Long id;
     
     @NotNull(message = "Координата X не может быть null")
-    private Integer x;
+    private Long x;
     
     @NotNull(message = "Координата Y не может быть null")
-    private Integer y;
+    private Long y;
     
     @NotNull(message = "Координата Z не может быть null")
     private Double z;
