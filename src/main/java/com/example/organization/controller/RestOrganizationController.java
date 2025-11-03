@@ -33,14 +33,15 @@ public class RestOrganizationController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sort,
             @RequestParam(defaultValue = "asc") String dir,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String searchField) {
         
         Sort.Direction direction = "desc".equalsIgnoreCase(dir) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
         
         Page<OrganizationDto> organizations;
         if (search != null && !search.trim().isEmpty()) {
-            organizations = organizationService.findBySearchTerm(search, pageable);
+            organizations = organizationService.findBySearchTerm(search, searchField, pageable);
         } else {
             organizations = organizationService.findAll(pageable);
         }

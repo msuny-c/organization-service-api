@@ -34,8 +34,13 @@ public class OrganizationService {
     }
     
     @Transactional(readOnly = true)
-    public Page<OrganizationDto> findBySearchTerm(String searchTerm, Pageable pageable) {
-        return organizationRepository.findBySearchTerm(searchTerm, pageable)
+    public Page<OrganizationDto> findBySearchTerm(String searchTerm, String searchField, Pageable pageable) {
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            return findAll(pageable);
+        }
+        return organizationRepository.findAll(
+                        OrganizationSpecifications.searchByTerm(searchTerm, searchField),
+                        pageable)
                 .map(mapper::toDto);
     }
     
