@@ -1,6 +1,6 @@
 @startuml
 skinparam dpi 120
-node "com.example.organization" {
+node "ru.itmo.organization" {
   package config
   package controller
   package service
