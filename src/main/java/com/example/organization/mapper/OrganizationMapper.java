@@ -21,7 +21,6 @@ public class OrganizationMapper {
         dto.setRating(organization.getRating());
         dto.setFullName(organization.getFullName());
         dto.setType(organization.getType());
-        dto.setVersion(organization.getVersion());
         
         if (organization.getCoordinates() != null) {
             dto.setCoordinatesId(organization.getCoordinates().getId());
@@ -54,7 +53,6 @@ public class OrganizationMapper {
         organization.setRating(dto.getRating());
         organization.setFullName(dto.getFullName());
         organization.setType(dto.getType());
-        organization.setVersion(dto.getVersion());
         
         return organization;
     }

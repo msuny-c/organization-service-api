@@ -45,6 +45,4 @@ public class OrganizationDto {
     private AddressDto postalAddress;
     
     private Boolean reusePostalAddressAsOfficial;
-    
-    private Long version;
 }

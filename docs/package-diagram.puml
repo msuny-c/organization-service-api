@@ -1,0 +1,27 @@
+@startuml
+skinparam dpi 120
+node "com.example.organization" {
+  package config
+  package controller
+  package service
+  package repository
+  package mapper
+  package dto
+  package model
+  package exception
+}
+
+controller --> service
+controller --> dto
+controller --> exception
+service --> repository
+service --> mapper
+service --> model
+service --> exception
+mapper --> model
+mapper --> dto
+repository --> model
+config --> controller
+config --> service
+
+@enduml

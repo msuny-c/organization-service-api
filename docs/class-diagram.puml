@@ -1,0 +1,71 @@
+@startuml
+skinparam dpi 120
+skinparam classAttributeIconSize 0
+hide methods
+hide stereotypes
+
+' --- Core layers ---
+class RestOrganizationController
+class SpecialOperationsController
+class OrganizationService
+class AddressService
+class CoordinatesService
+class LocationService
+interface OrganizationRepository
+interface AddressRepository
+interface CoordinatesRepository
+interface LocationRepository
+class OrganizationMapper
+class ResourceNotFoundException
+
+' --- DTOs ---
+class OrganizationDto
+class AddressDto
+class CoordinatesDto
+class LocationDto
+
+' --- Domain ---
+class Organization
+class Address
+class Coordinates
+class Location
+enum OrganizationType
+
+' --- Relationships between layers ---
+RestOrganizationController --> OrganizationService
+RestOrganizationController --> AddressService
+RestOrganizationController --> CoordinatesService
+RestOrganizationController --> LocationService
+SpecialOperationsController --> OrganizationService
+
+OrganizationService --> OrganizationRepository
+OrganizationService --> CoordinatesRepository
+OrganizationService --> AddressRepository
+OrganizationService --> LocationRepository
+OrganizationService --> OrganizationMapper
+OrganizationService --> ResourceNotFoundException
+OrganizationService --> OrganizationDto
+
+AddressService --> AddressRepository
+AddressService --> LocationRepository
+AddressService --> OrganizationMapper
+CoordinatesService --> CoordinatesRepository
+LocationService --> LocationRepository
+
+OrganizationMapper --> Organization
+OrganizationMapper --> Address
+OrganizationMapper --> Coordinates
+OrganizationMapper --> Location
+OrganizationMapper --> OrganizationDto
+OrganizationMapper --> AddressDto
+OrganizationMapper --> CoordinatesDto
+OrganizationMapper --> LocationDto
+
+' --- Domain associations ---
+Organization --> Coordinates : coordinates
+Organization --> Address : postalAddress
+Organization --> Address : officialAddress
+Address --> Location : town
+Organization --> OrganizationType : type
+
+@enduml

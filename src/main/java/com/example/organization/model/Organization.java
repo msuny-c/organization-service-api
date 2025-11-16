@@ -61,9 +61,6 @@ public class Organization {
     @JoinColumn(name = "postal_address_id", nullable = false)
     private Address postalAddress;
     
-    @Version
-    private Long version;
-    
     @PrePersist
     public void onCreate() {
         this.creationDate = LocalDate.now();
