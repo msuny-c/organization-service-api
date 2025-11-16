@@ -11,9 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/operations/api")
+@RequestMapping("api/operations")
 @RequiredArgsConstructor
-public class SpecialOperationsController {
+public class RestOperationsController {
     
     private final OrganizationService organizationService;
     
