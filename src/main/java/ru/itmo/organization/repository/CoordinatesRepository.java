@@ -1,22 +1,48 @@
 package ru.itmo.organization.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
-
 import ru.itmo.organization.model.Coordinates;
 
-import java.util.Optional;
-
 @Repository
-public interface CoordinatesRepository extends JpaRepository<Coordinates, Long> {
+public class CoordinatesRepository {
     
-    @Query("SELECT c FROM Coordinates c WHERE NOT EXISTS " +
-           "(SELECT o FROM Organization o WHERE o.coordinates = c)")
-    java.util.List<Coordinates> findOrphaned();
+    @PersistenceContext
+    private EntityManager entityManager;
     
-    @Query("SELECT c FROM Coordinates c ORDER BY c.x ASC, c.y ASC")
-    java.util.List<Coordinates> findAllOrderedByXThenY();
+    public List<Coordinates> findAll() {
+        return entityManager.createQuery("SELECT c FROM Coordinates c", Coordinates.class)
+                .getResultList();
+    }
     
-    Optional<Coordinates> findByXAndY(Long x, Long y);
+    public Optional<Coordinates> findById(Long id) {
+        return Optional.ofNullable(entityManager.find(Coordinates.class, id));
+    }
+    
+    public Coordinates save(Coordinates coordinates) {
+        if (coordinates.getId() == null) {
+            entityManager.persist(coordinates);
+            return coordinates;
+        }
+        return entityManager.merge(coordinates);
+    }
+    
+    public void delete(Coordinates coordinates) {
+        if (coordinates == null) {
+            return;
+        }
+        Coordinates managed = entityManager.contains(coordinates) ? coordinates : entityManager.merge(coordinates);
+        entityManager.remove(managed);
+    }
+    
+    public List<Coordinates> findOrphaned() {
+        return entityManager.createQuery(
+                        "SELECT c FROM Coordinates c WHERE NOT EXISTS " +
+                        "(SELECT o FROM Organization o WHERE o.coordinates = c)",
+                        Coordinates.class)
+                .getResultList();
+    }
 }

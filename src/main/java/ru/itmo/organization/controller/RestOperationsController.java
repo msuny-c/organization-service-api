@@ -17,72 +17,42 @@ public class RestOperationsController {
     
     private final OrganizationService organizationService;
     
-    @PostMapping("/minimal-coordinates")
-    public ResponseEntity<?> findMinimalCoordinates() {
-        try {
-            OrganizationDto organization = organizationService.findOneWithMinimalCoordinates();
-            return ResponseEntity.ok(organization);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+    @GetMapping("/minimal-coordinates")
+    public ResponseEntity<OrganizationDto> findMinimalCoordinates() {
+        OrganizationDto organization = organizationService.findOneWithMinimalCoordinates();
+        return ResponseEntity.ok(organization);
     }
     
-    @PostMapping("/group-by-rating")
-    public ResponseEntity<?> groupByRating() {
-        try {
-            Map<Integer, Long> ratingGroups = organizationService.groupByRating();
-            return ResponseEntity.ok(ratingGroups);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+    @GetMapping("/group-by-rating")
+    public ResponseEntity<Map<Integer, Long>> groupByRating() {
+        Map<Integer, Long> ratingGroups = organizationService.groupByRating();
+        return ResponseEntity.ok(ratingGroups);
     }
     
-    @PostMapping("/count-by-type")
-    public ResponseEntity<?> countByType(@RequestParam OrganizationType type) {
-        try {
-            long count = organizationService.countByType(type);
-            Map<String, Object> result = new HashMap<>();
-            result.put("type", type);
-            result.put("count", count);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+    @GetMapping("/count-by-type")
+    public ResponseEntity<Map<String, Object>> countByType(@RequestParam OrganizationType type) {
+        long count = organizationService.countByType(type);
+        Map<String, Object> result = new HashMap<>();
+        result.put("type", type);
+        result.put("count", count);
+        return ResponseEntity.ok(result);
     }
     
     @PostMapping("/dismiss-employees")
-    public ResponseEntity<?> dismissAllEmployees(@RequestParam Long organizationId) {
-        try {
-            OrganizationDto updated = organizationService.dismissAllEmployees(organizationId);
-            Map<String, Object> result = new HashMap<>();
-            result.put("organization", updated);
-            result.put("message", "Все сотрудники организации \"" + updated.getName() + "\" уволены");
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+    public ResponseEntity<Map<String, Object>> dismissAllEmployees(@RequestParam Long organizationId) {
+        OrganizationDto updated = organizationService.dismissAllEmployees(organizationId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("organization", updated);
+        result.put("message", "Все сотрудники организации \"" + updated.getName() + "\" уволены");
+        return ResponseEntity.ok(result);
     }
     
     @PostMapping("/absorb")
-    public ResponseEntity<?> absorb(@RequestParam Long absorbingId, @RequestParam Long absorbedId) {
-        try {
-            OrganizationDto absorbing = organizationService.absorb(absorbingId, absorbedId);
-            Map<String, Object> result = new HashMap<>();
-            result.put("organization", absorbing);
-            result.put("message", "Организация успешно поглощена. Новое количество сотрудников: " + absorbing.getEmployeesCount());
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
-        }
+    public ResponseEntity<Map<String, Object>> absorb(@RequestParam Long absorbingId, @RequestParam Long absorbedId) {
+        OrganizationDto absorbing = organizationService.absorb(absorbingId, absorbedId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("organization", absorbing);
+        result.put("message", "Организация успешно поглощена. Новое количество сотрудников: " + absorbing.getEmployeesCount());
+        return ResponseEntity.ok(result);
     }
 }

@@ -25,6 +25,6 @@ cors:
 
 logging:
   level:
-    com.example: ${LOG_LEVEL:INFO}
+    ru.itmo: ${LOG_LEVEL:INFO}
     org.springframework.web: ${LOG_LEVEL:INFO}
     org.hibernate.SQL: ${LOG_LEVEL:INFO}

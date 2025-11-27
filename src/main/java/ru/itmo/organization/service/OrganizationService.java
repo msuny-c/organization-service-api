@@ -38,9 +38,7 @@ public class OrganizationService {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             return findAll(pageable);
         }
-        return organizationRepository.findAll(
-                        OrganizationSpecifications.searchByTerm(searchTerm, searchField),
-                        pageable)
+        return organizationRepository.search(searchTerm, searchField, pageable)
                 .map(mapper::toDto);
     }
     
@@ -221,20 +219,20 @@ public class OrganizationService {
     private void cleanupOrphanedObjects(Coordinates coordinates, Address officialAddress, Address postalAddress) {
         if (coordinates != null) {
             List<Coordinates> orphanedCoordinates = coordinatesRepository.findOrphaned();
-            if (orphanedCoordinates.contains(coordinates)) {
+            if (orphanedCoordinates.stream().anyMatch(c -> c.getId().equals(coordinates.getId()))) {
                 coordinatesRepository.delete(coordinates);
             }
         }
         
         if (officialAddress != null) {
             List<Address> orphanedAddresses = addressRepository.findOrphaned();
-            if (orphanedAddresses.contains(officialAddress)) {
+            if (orphanedAddresses.stream().anyMatch(a -> a.getId().equals(officialAddress.getId()))) {
                 Location town = officialAddress.getTown();
                 addressRepository.delete(officialAddress);
                 
                 if (town != null) {
                     List<Location> orphanedLocations = locationRepository.findOrphaned();
-                    if (orphanedLocations.contains(town)) {
+                    if (orphanedLocations.stream().anyMatch(l -> l.getId().equals(town.getId()))) {
                         locationRepository.delete(town);
                     }
                 }
@@ -243,13 +241,13 @@ public class OrganizationService {
         
         if (postalAddress != null && !postalAddress.equals(officialAddress)) {
             List<Address> orphanedAddresses = addressRepository.findOrphaned();
-            if (orphanedAddresses.contains(postalAddress)) {
+            if (orphanedAddresses.stream().anyMatch(a -> a.getId().equals(postalAddress.getId()))) {
                 Location town = postalAddress.getTown();
                 addressRepository.delete(postalAddress);
                 
                 if (town != null) {
                     List<Location> orphanedLocations = locationRepository.findOrphaned();
-                    if (orphanedLocations.contains(town)) {
+                    if (orphanedLocations.stream().anyMatch(l -> l.getId().equals(town.getId()))) {
                         locationRepository.delete(town);
                     }
                 }

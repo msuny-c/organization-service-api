@@ -1,27 +1,51 @@
 package ru.itmo.organization.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
-import ru.itmo.organization.model.Address;
-
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.stereotype.Repository;
+import ru.itmo.organization.model.Address;
 
 @Repository
-public interface AddressRepository extends JpaRepository<Address, Long> {
+public class AddressRepository {
     
-    List<Address> findByZipCodeContainingIgnoreCase(String zipCode);
+    @PersistenceContext
+    private EntityManager entityManager;
     
-    Optional<Address> findByZipCodeAndTownId(String zipCode, Long townId);
+    public List<Address> findAll() {
+        return entityManager.createQuery(
+                        "SELECT DISTINCT a FROM Address a " +
+                        "LEFT JOIN FETCH a.town",
+                        Address.class)
+                .getResultList();
+    }
     
-    @Query("SELECT a FROM Address a WHERE " +
-           "(a.zipCode IS NULL OR LOWER(a.zipCode) LIKE LOWER(CONCAT('%', :term, '%')))")
-    List<Address> findByZipCodeSearchTerm(@Param("term") String term);
+    public Optional<Address> findById(Long id) {
+        return Optional.ofNullable(entityManager.find(Address.class, id));
+    }
     
-    @Query("SELECT a FROM Address a WHERE NOT EXISTS " +
-           "(SELECT o FROM Organization o WHERE o.officialAddress = a OR o.postalAddress = a)")
-    List<Address> findOrphaned();
+    public Address save(Address address) {
+        if (address.getId() == null) {
+            entityManager.persist(address);
+            return address;
+        }
+        return entityManager.merge(address);
+    }
+    
+    public void delete(Address address) {
+        if (address == null) {
+            return;
+        }
+        Address managed = entityManager.contains(address) ? address : entityManager.merge(address);
+        entityManager.remove(managed);
+    }
+    
+    public List<Address> findOrphaned() {
+        return entityManager.createQuery(
+                        "SELECT a FROM Address a WHERE NOT EXISTS " +
+                        "(SELECT o FROM Organization o WHERE o.officialAddress = a OR o.postalAddress = a)",
+                        Address.class)
+                .getResultList();
+    }
 }

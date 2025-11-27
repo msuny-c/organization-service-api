@@ -1,26 +1,48 @@
 package ru.itmo.organization.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
-
 import ru.itmo.organization.model.Location;
 
-import java.util.List;
-
 @Repository
-public interface LocationRepository extends JpaRepository<Location, Long> {
+public class LocationRepository {
     
-    List<Location> findByNameContainingIgnoreCase(String name);
+    @PersistenceContext
+    private EntityManager entityManager;
     
-    @Query("SELECT l FROM Location l WHERE " +
-           "LOWER(l.name) LIKE LOWER(CONCAT('%', :term, '%'))")
-    List<Location> findBySearchTerm(@Param("term") String term);
+    public List<Location> findAll() {
+        return entityManager.createQuery("SELECT l FROM Location l", Location.class)
+                .getResultList();
+    }
     
-    @Query("SELECT l FROM Location l WHERE NOT EXISTS " +
-           "(SELECT a FROM Address a WHERE a.town = l)")
-    List<Location> findOrphaned();
+    public Optional<Location> findById(Long id) {
+        return Optional.ofNullable(entityManager.find(Location.class, id));
+    }
     
-    boolean existsById(Long id);
+    public Location save(Location location) {
+        if (location.getId() == null) {
+            entityManager.persist(location);
+            return location;
+        }
+        return entityManager.merge(location);
+    }
+    
+    public void delete(Location location) {
+        if (location == null) {
+            return;
+        }
+        Location managed = entityManager.contains(location) ? location : entityManager.merge(location);
+        entityManager.remove(managed);
+    }
+    
+    public List<Location> findOrphaned() {
+        return entityManager.createQuery(
+                        "SELECT l FROM Location l WHERE NOT EXISTS " +
+                        "(SELECT a FROM Address a WHERE a.town = l)",
+                        Location.class)
+                .getResultList();
+    }
 }
