@@ -3,6 +3,7 @@ package ru.itmo.organization.repository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Order;
 import jakarta.persistence.criteria.Predicate;
@@ -36,7 +37,9 @@ public class OrganizationRepository {
             "annualTurnover", "o.annualTurnover",
             "creationDate", "o.creationDate",
             "coordinates.x", "o.coordinates.x",
-            "coordinates.y", "o.coordinates.y"
+            "coordinates.y", "o.coordinates.y",
+            "postalAddress.zipCode", "pa.zipCode",
+            "postalAddress.town.name", "pa.town.name"
     );
     
     @PersistenceContext
@@ -163,9 +166,14 @@ public class OrganizationRepository {
         String likePattern = "%" + term + "%";
         String field = rawField == null ? "" : rawField.trim().toLowerCase(Locale.ROOT);
         
+        Join<Organization, ?> postalJoin = root.join("postalAddress", JoinType.LEFT);
+        Join<?, ?> postalTownJoin = postalJoin.join("town", JoinType.LEFT);
+        
         Map<String, Predicate> predicateByField = new HashMap<>();
         predicateByField.put("name", cb.like(cb.lower(root.get("name")), likePattern));
         predicateByField.put("fullname", cb.like(cb.lower(root.get("fullName")), likePattern));
+        predicateByField.put("postaladdress.zipcode", cb.like(cb.lower(postalJoin.get("zipCode")), likePattern));
+        predicateByField.put("postaladdress.town.name", cb.like(cb.lower(postalTownJoin.get("name")), likePattern));
         
         if (!field.isEmpty() && !"all".equals(field)) {
             Predicate selected = predicateByField.get(field.toLowerCase(Locale.ROOT));
@@ -202,6 +210,8 @@ public class OrganizationRepository {
                 root.get(property);
             case "coordinates.x" -> root.join("coordinates", JoinType.LEFT).get("x");
             case "coordinates.y" -> root.join("coordinates", JoinType.LEFT).get("y");
+            case "postalAddress.zipCode" -> root.join("postalAddress", JoinType.LEFT).get("zipCode");
+            case "postalAddress.town.name" -> root.join("postalAddress", JoinType.LEFT).join("town", JoinType.LEFT).get("name");
             default -> null;
         };
     }
