@@ -141,7 +141,7 @@ public class OrganizationRepository {
         if (idPredicate != null) {
             idQuery.where(idPredicate);
         }
-        idQuery.select(idRoot.get("id")).distinct(true);
+        idQuery.select(idRoot.get("id"));
         applySort(pageable.getSort(), cb, idQuery, idRoot);
         
         List<Long> ids = entityManager.createQuery(idQuery)
