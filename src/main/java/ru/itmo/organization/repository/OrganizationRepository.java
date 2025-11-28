@@ -27,19 +27,19 @@ import ru.itmo.organization.model.OrganizationType;
 @Repository
 public class OrganizationRepository {
     
-    private static final Map<String, String> SORT_MAPPING = Map.of(
-            "id", "o.id",
-            "name", "o.name",
-            "fullName", "o.fullName",
-            "employeesCount", "o.employeesCount",
-            "rating", "o.rating",
-            "type", "o.type",
-            "annualTurnover", "o.annualTurnover",
-            "creationDate", "o.creationDate",
-            "coordinates.x", "o.coordinates.x",
-            "coordinates.y", "o.coordinates.y",
-            "postalAddress.zipCode", "pa.zipCode",
-            "postalAddress.town.name", "pa.town.name"
+    private static final Map<String, String> SORT_MAPPING = Map.ofEntries(
+            Map.entry("id", "o.id"),
+            Map.entry("name", "o.name"),
+            Map.entry("fullName", "o.fullName"),
+            Map.entry("employeesCount", "o.employeesCount"),
+            Map.entry("rating", "o.rating"),
+            Map.entry("type", "o.type"),
+            Map.entry("annualTurnover", "o.annualTurnover"),
+            Map.entry("creationDate", "o.creationDate"),
+            Map.entry("coordinates.x", "o.coordinates.x"),
+            Map.entry("coordinates.y", "o.coordinates.y"),
+            Map.entry("postalAddress.zipCode", "pa.zipCode"),
+            Map.entry("postalAddress.town.name", "pa.town.name")
     );
     
     @PersistenceContext
