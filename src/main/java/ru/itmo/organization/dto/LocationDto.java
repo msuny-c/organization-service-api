@@ -25,4 +25,6 @@ public class LocationDto {
     
     @NotNull(message = "Имя не может быть null")
     private String name;
+
+    private Boolean isUpdated;
 }

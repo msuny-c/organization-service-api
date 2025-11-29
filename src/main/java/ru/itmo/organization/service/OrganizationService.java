@@ -171,50 +171,108 @@ public class OrganizationService {
     }
     
     private Coordinates getOrCreateCoordinates(OrganizationDto dto) {
-        if (dto.getCoordinatesId() != null) {
-            return coordinatesRepository.findById(dto.getCoordinatesId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Координаты с ID " + dto.getCoordinatesId() + " не найдены"));
-        } else if (dto.getCoordinates() != null) {
-            Coordinates coordinates = mapper.toEntity(dto.getCoordinates());
+        Long id = dto.getCoordinatesId();
+        ru.itmo.organization.dto.CoordinatesDto cDto = dto.getCoordinates();
+
+        if (id != null) {
+            boolean updated = cDto != null && Boolean.TRUE.equals(cDto.getIsUpdated());
+            if (!updated) {
+                return coordinatesRepository.getReference(id);
+            }
+
+            Coordinates coordinates = coordinatesRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Координаты с ID " + id + " не найдены"));
+
+            if (cDto == null) {
+                throw new IllegalArgumentException("coordinates обязателен при isUpdated=true");
+            }
+
+            coordinates.setX(cDto.getX());
+            coordinates.setY(cDto.getY());
             return coordinatesRepository.save(coordinates);
-        } else {
+        }
+
+        if (cDto == null) {
             throw new IllegalArgumentException("Необходимо указать координаты");
         }
+        Coordinates coordinates = mapper.toEntity(cDto);
+        return coordinatesRepository.save(coordinates);
     }
     
     private Address getOrCreateAddress(Long addressId, ru.itmo.organization.dto.AddressDto addressDto) {
         if (addressId != null) {
-            return addressRepository.findById(addressId)
+            boolean updated = addressDto != null && Boolean.TRUE.equals(addressDto.getIsUpdated());
+            if (!updated) {
+                return addressRepository.getReference(addressId);
+            }
+
+            Address address = addressRepository.findById(addressId)
                     .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + addressId + " не найден"));
-        } else if (addressDto != null) {
-            if (addressDto.getZipCode() != null && addressDto.getZipCode().length() < 7) {
-                throw new IllegalArgumentException("Почтовый индекс должен содержать минимум 7 символов");
-            }
-            
-            Address address = mapper.toEntity(addressDto);
-            
-            if (addressDto.getTownId() != null) {
-                Location town = locationRepository.findById(addressDto.getTownId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + addressDto.getTownId() + " не найдена"));
-                address.setTown(town);
-            } else if (addressDto.getTown() != null && isLocationValid(addressDto.getTown())) {
-                Location town = mapper.toEntity(addressDto.getTown());
-                town = locationRepository.save(town);
-                address.setTown(town);
-            } else {
-                throw new IllegalArgumentException("Необходимо указать город для адреса");
-            }
-            
+
+            applyAddressUpdates(address, addressDto);
             return addressRepository.save(address);
         }
-        throw new IllegalArgumentException("Необходимо указать адрес");
+
+        if (addressDto == null) {
+            throw new IllegalArgumentException("Необходимо указать адрес");
+        }
+
+        Address address = new Address();
+        applyAddressUpdates(address, addressDto);
+        return addressRepository.save(address);
     }
-    
-    private boolean isLocationValid(ru.itmo.organization.dto.LocationDto locationDto) {
-        return locationDto.getX() != null && 
-               locationDto.getY() != null && 
-               locationDto.getZ() != null && 
-               locationDto.getName() != null && !locationDto.getName().trim().isEmpty();
+
+    private void applyAddressUpdates(Address address, ru.itmo.organization.dto.AddressDto dto) {
+        if (dto.getZipCode() != null) {
+            if (dto.getZipCode().length() < 7) {
+                throw new IllegalArgumentException("Почтовый индекс должен содержать минимум 7 символов");
+            }
+            address.setZipCode(dto.getZipCode());
+        }
+
+        if (dto.getTownId() != null) {
+            if (dto.getTown() == null || !Boolean.TRUE.equals(dto.getTown().getIsUpdated())) {
+                address.setTown(locationRepository.getReference(dto.getTownId()));
+                return;
+            }
+
+            Location town = updateOrCreateTown(dto.getTownId(), dto.getTown());
+            address.setTown(town);
+            return;
+        }
+
+        if (dto.getTown() != null) {
+            Location town = updateOrCreateTown(dto.getTown().getId(), dto.getTown());
+            address.setTown(town);
+        } else if (address.getTown() == null) {
+            throw new IllegalArgumentException("Необходимо указать город для адреса");
+        }
+    }
+
+    private Location updateOrCreateTown(Long id, ru.itmo.organization.dto.LocationDto dto) {
+        boolean updated = dto != null && Boolean.TRUE.equals(dto.getIsUpdated());
+
+        if (id != null) {
+            if (!updated) {
+                return locationRepository.getReference(id);
+            }
+
+            Location town = locationRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
+
+            town.setName(dto.getName());
+            town.setX(dto.getX());
+            town.setY(dto.getY());
+            town.setZ(dto.getZ());
+            return locationRepository.save(town);
+        }
+
+        if (dto == null) {
+            throw new IllegalArgumentException("Необходимо указать город");
+        }
+
+        Location town = mapper.toEntity(dto);
+        return locationRepository.save(town);
     }
     
     private void cleanupOrphanedObjects(Coordinates coordinates, Address officialAddress, Address postalAddress) {

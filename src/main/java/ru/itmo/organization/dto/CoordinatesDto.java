@@ -19,4 +19,6 @@ public class CoordinatesDto {
     
     @NotNull(message = "Координата Y не может быть null")
     private Long y;
+
+    private Boolean isUpdated;
 }

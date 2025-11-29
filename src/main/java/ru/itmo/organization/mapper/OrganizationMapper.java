@@ -63,11 +63,11 @@ public class OrganizationMapper {
             return null;
         }
         
-        return new CoordinatesDto(
-            coordinates.getId(),
-            coordinates.getX(),
-            coordinates.getY()
-        );
+        CoordinatesDto dto = new CoordinatesDto();
+        dto.setId(coordinates.getId());
+        dto.setX(coordinates.getX());
+        dto.setY(coordinates.getY());
+        return dto;
     }
     
     public Coordinates toEntity(CoordinatesDto dto) {
@@ -115,13 +115,13 @@ public class OrganizationMapper {
             return null;
         }
         
-        return new LocationDto(
-            location.getId(),
-            location.getX(),
-            location.getY(),
-            location.getZ(),
-            location.getName()
-        );
+        LocationDto dto = new LocationDto();
+        dto.setId(location.getId());
+        dto.setX(location.getX());
+        dto.setY(location.getY());
+        dto.setZ(location.getZ());
+        dto.setName(location.getName());
+        return dto;
     }
     
     public Location toEntity(LocationDto dto) {

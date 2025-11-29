@@ -20,4 +20,6 @@ public class AddressDto {
     private Long townId;
     
     private LocationDto town;
+
+    private Boolean isUpdated;
 }

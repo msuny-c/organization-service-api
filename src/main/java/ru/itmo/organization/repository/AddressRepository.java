@@ -41,6 +41,10 @@ public class AddressRepository {
         entityManager.remove(managed);
     }
 
+    public Address getReference(Long id) {
+        return entityManager.getReference(Address.class, id);
+    }
+
     public boolean isReferenced(Long id) {
         Long count = entityManager.createQuery(
                         "SELECT COUNT(o.id) FROM Organization o WHERE o.officialAddress.id = :id OR o.postalAddress.id = :id",

@@ -38,6 +38,10 @@ public class LocationRepository {
         entityManager.remove(managed);
     }
 
+    public Location getReference(Long id) {
+        return entityManager.getReference(Location.class, id);
+    }
+
     public boolean isReferenced(Long id) {
         Long count = entityManager.createQuery(
                         "SELECT COUNT(a.id) FROM Address a WHERE a.town.id = :id",

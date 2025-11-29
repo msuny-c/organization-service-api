@@ -37,6 +37,10 @@ public class CoordinatesRepository {
         Coordinates managed = entityManager.contains(coordinates) ? coordinates : entityManager.merge(coordinates);
         entityManager.remove(managed);
     }
+
+    public Coordinates getReference(Long id) {
+        return entityManager.getReference(Coordinates.class, id);
+    }
     
     public boolean isReferenced(Long id) {
         Long count = entityManager.createQuery(
