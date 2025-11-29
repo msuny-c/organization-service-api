@@ -10,7 +10,6 @@ import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.LocationRepository;
-import ru.itmo.organization.repository.OrganizationRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocationService {
     
     private final LocationRepository locationRepository;
-    private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
 
     @PersistenceContext
@@ -69,10 +67,15 @@ public class LocationService {
         var existing = locationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
+            entityManager.createQuery("DELETE FROM Organization o WHERE o.postalAddress.id IN (SELECT a.id FROM Address a WHERE a.town.id = :locationId)")
+                    .setParameter("locationId", id)
+                    .executeUpdate();
+            entityManager.createQuery("UPDATE Organization o SET o.officialAddress = NULL WHERE o.officialAddress.id IN (SELECT a.id FROM Address a WHERE a.town.id = :locationId)")
+                    .setParameter("locationId", id)
+                    .executeUpdate();
             entityManager.createQuery("DELETE FROM Address a WHERE a.town.id = :locationId")
                     .setParameter("locationId", id)
                     .executeUpdate();
-            organizationRepository.deleteAllByLocationTownId(id);
             locationRepository.delete(existing);
         } else {
             if (locationRepository.isReferenced(id)) {
