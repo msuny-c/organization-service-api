@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import ru.itmo.organization.dto.AddressDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
+import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.AddressRepository;
 
 import org.springframework.stereotype.Service;
@@ -21,5 +22,35 @@ public class AddressService {
     @Transactional(readOnly = true)
     public List<AddressDto> findAll() {
         return repository.findAll().stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public AddressDto findById(Long id) {
+        return repository.findById(id)
+                .map(mapper::toDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
+    }
+
+    public AddressDto create(AddressDto dto) {
+        var entity = mapper.toEntity(dto);
+        var saved = repository.save(entity);
+        return mapper.toDto(saved);
+    }
+
+    public AddressDto update(Long id, AddressDto dto) {
+        var existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
+        existing.setZipCode(dto.getZipCode());
+        var saved = repository.save(existing);
+        return mapper.toDto(saved);
+    }
+
+    public void delete(Long id) {
+        var existing = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
+        if (repository.isReferenced(id)) {
+            throw new IllegalStateException("Нельзя удалить адрес, используемый организациями");
+        }
+        repository.delete(existing);
     }
 }
