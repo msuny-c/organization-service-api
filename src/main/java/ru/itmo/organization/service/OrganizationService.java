@@ -63,6 +63,8 @@ public class OrganizationService {
             organization.setOfficialAddress(postalAddress);
         } else if (dto.getOfficialAddressId() != null || dto.getOfficialAddress() != null) {
             organization.setOfficialAddress(getOrCreateAddress(dto.getOfficialAddressId(), dto.getOfficialAddress()));
+        } else {
+            organization.setOfficialAddress(null);
         }
         
         Organization saved = organizationRepository.save(organization);
@@ -94,6 +96,8 @@ public class OrganizationService {
             existing.setOfficialAddress(postalAddress);
         } else if (dto.getOfficialAddressId() != null || dto.getOfficialAddress() != null) {
             existing.setOfficialAddress(getOrCreateAddress(dto.getOfficialAddressId(), dto.getOfficialAddress()));
+        } else {
+            existing.setOfficialAddress(null);
         }
         
         Organization updated = organizationRepository.save(existing);
