@@ -40,12 +40,13 @@ public class AddressRepository {
         Address managed = entityManager.contains(address) ? address : entityManager.merge(address);
         entityManager.remove(managed);
     }
-    
-    public List<Address> findOrphaned() {
-        return entityManager.createQuery(
-                        "SELECT a FROM Address a WHERE NOT EXISTS " +
-                        "(SELECT o FROM Organization o WHERE o.officialAddress = a OR o.postalAddress = a)",
-                        Address.class)
-                .getResultList();
+
+    public boolean isReferenced(Long id) {
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(o.id) FROM Organization o WHERE o.officialAddress.id = :id OR o.postalAddress.id = :id",
+                        Long.class)
+                .setParameter("id", id)
+                .getSingleResult();
+        return count != null && count > 0;
     }
 }

@@ -3,19 +3,22 @@ package ru.itmo.organization.repository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -27,19 +30,17 @@ import ru.itmo.organization.model.OrganizationType;
 @Repository
 public class OrganizationRepository {
 
-    private static final Map<String, String> SORT_MAPPING = Map.ofEntries(
-            Map.entry("id", "o.id"),
-            Map.entry("name", "o.name"),
-            Map.entry("fullName", "o.fullName"),
-            Map.entry("employeesCount", "o.employeesCount"),
-            Map.entry("rating", "o.rating"),
-            Map.entry("type", "o.type"),
-            Map.entry("annualTurnover", "o.annualTurnover"),
-            Map.entry("creationDate", "o.creationDate"),
-            Map.entry("coordinates.x", "o.coordinates.x"),
-            Map.entry("coordinates.y", "o.coordinates.y"),
-            Map.entry("postalAddress.zipCode", "pa.zipCode"),
-            Map.entry("postalAddress.town.name", "pa.town.name"));
+    private static final Map<String, Function<Root<Organization>, Path<?>>> SORT_PATHS = Map.ofEntries(
+            Map.entry("id", root -> root.get("id")),
+            Map.entry("name", root -> root.get("name")),
+            Map.entry("fullName", root -> root.get("fullName")),
+            Map.entry("employeesCount", root -> root.get("employeesCount")),
+            Map.entry("rating", root -> root.get("rating")),
+            Map.entry("type", root -> root.get("type")),
+            Map.entry("annualTurnover", root -> root.get("annualTurnover")),
+            Map.entry("postalAddress.zipCode", root -> root.join("postalAddress", JoinType.LEFT).get("zipCode")),
+            Map.entry("postalAddress.town.name", root -> root.join("postalAddress", JoinType.LEFT)
+                    .join("town", JoinType.LEFT).get("name")));
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -153,7 +154,7 @@ public class OrganizationRepository {
             return new PageImpl<>(List.of(), pageable, total);
         }
 
-        List<Organization> content = fetchOrganizationsWithDetails(ids, pageable.getSort());
+        List<Organization> content = fetchOrganizationsWithDetails(ids);
         return new PageImpl<>(content, pageable, total);
     }
 
@@ -191,35 +192,31 @@ public class OrganizationRepository {
             orders.add(cb.asc(root.get("id")));
         } else {
             for (Sort.Order sortOrder : sort) {
-                jakarta.persistence.criteria.Path<?> path = resolveSortPath(sortOrder.getProperty(), root);
+                Path<?> path = resolveSortPath(sortOrder.getProperty(), root);
                 if (path != null) {
                     orders.add(sortOrder.isDescending() ? cb.desc(path) : cb.asc(path));
                 }
             }
         }
 
-        if (orders.isEmpty()) {
+        boolean hasIdSort = orders.stream()
+                .anyMatch(order -> order.getExpression().equals(root.get("id")));
+        if (!hasIdSort) {
             orders.add(cb.asc(root.get("id")));
         }
 
         query.orderBy(orders);
     }
 
-    private jakarta.persistence.criteria.Path<?> resolveSortPath(String property, Root<Organization> root) {
-        return switch (property) {
-            case "id", "name", "fullName", "employeesCount", "rating", "type", "annualTurnover", "creationDate" ->
-                root.get(property);
-            case "coordinates.x" -> root.join("coordinates", JoinType.LEFT).get("x");
-            case "coordinates.y" -> root.join("coordinates", JoinType.LEFT).get("y");
-            case "postalAddress.zipCode" -> root.join("postalAddress", JoinType.LEFT).get("zipCode");
-            case "postalAddress.town.name" ->
-                root.join("postalAddress", JoinType.LEFT).join("town", JoinType.LEFT).get("name");
-            default -> null;
-        };
+    private Path<?> resolveSortPath(String property, Root<Organization> root) {
+        Function<Root<Organization>, Path<?>> builder = SORT_PATHS.get(property);
+        if (builder == null) {
+            return null;
+        }
+        return builder.apply(root);
     }
 
-    private List<Organization> fetchOrganizationsWithDetails(List<Long> ids, Sort sort) {
-        String orderBy = buildOrderClause(sort);
+    private List<Organization> fetchOrganizationsWithDetails(List<Long> ids) {
         TypedQuery<Organization> query = entityManager.createQuery(
                 "SELECT DISTINCT o FROM Organization o " +
                         "LEFT JOIN FETCH o.coordinates " +
@@ -227,30 +224,16 @@ public class OrganizationRepository {
                         "LEFT JOIN FETCH oa.town " +
                         "LEFT JOIN FETCH o.postalAddress pa " +
                         "LEFT JOIN FETCH pa.town " +
-                        "WHERE o.id IN :ids" + orderBy,
+                        "WHERE o.id IN :ids",
                 Organization.class)
                 .setParameter("ids", ids);
 
-        return query.getResultList();
-    }
-
-    private String buildOrderClause(Sort sort) {
-        if (sort == null || sort.isUnsorted()) {
-            return " ORDER BY o.id ASC";
+        List<Organization> content = query.getResultList();
+        Map<Long, Integer> positions = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) {
+            positions.put(ids.get(i), i);
         }
-
-        List<String> clauses = new ArrayList<>();
-        for (Sort.Order order : sort) {
-            String mapped = SORT_MAPPING.get(order.getProperty());
-            if (mapped != null) {
-                clauses.add(mapped + (order.isDescending() ? " DESC" : " ASC"));
-            }
-        }
-
-        if (clauses.isEmpty()) {
-            clauses.add("o.id ASC");
-        }
-
-        return " ORDER BY " + String.join(", ", clauses);
+        content.sort(Comparator.comparingInt(o -> positions.getOrDefault(o.getId(), Integer.MAX_VALUE)));
+        return content;
     }
 }

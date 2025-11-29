@@ -38,11 +38,12 @@ public class CoordinatesRepository {
         entityManager.remove(managed);
     }
     
-    public List<Coordinates> findOrphaned() {
-        return entityManager.createQuery(
-                        "SELECT c FROM Coordinates c WHERE NOT EXISTS " +
-                        "(SELECT o FROM Organization o WHERE o.coordinates = c)",
-                        Coordinates.class)
-                .getResultList();
+    public boolean isReferenced(Long id) {
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(o.id) FROM Organization o WHERE o.coordinates.id = :id",
+                        Long.class)
+                .setParameter("id", id)
+                .getSingleResult();
+        return count != null && count > 0;
     }
 }

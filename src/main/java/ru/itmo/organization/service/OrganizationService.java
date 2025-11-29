@@ -218,41 +218,29 @@ public class OrganizationService {
     }
     
     private void cleanupOrphanedObjects(Coordinates coordinates, Address officialAddress, Address postalAddress) {
-        if (coordinates != null) {
-            List<Coordinates> orphanedCoordinates = coordinatesRepository.findOrphaned();
-            if (orphanedCoordinates.stream().anyMatch(c -> c.getId().equals(coordinates.getId()))) {
-                coordinatesRepository.delete(coordinates);
-            }
+        if (coordinates != null && coordinates.getId() != null && !coordinatesRepository.isReferenced(coordinates.getId())) {
+            coordinatesRepository.delete(coordinates);
         }
-        
+
         if (officialAddress != null) {
-            List<Address> orphanedAddresses = addressRepository.findOrphaned();
-            if (orphanedAddresses.stream().anyMatch(a -> a.getId().equals(officialAddress.getId()))) {
-                Location town = officialAddress.getTown();
-                addressRepository.delete(officialAddress);
-                
-                if (town != null) {
-                    List<Location> orphanedLocations = locationRepository.findOrphaned();
-                    if (orphanedLocations.stream().anyMatch(l -> l.getId().equals(town.getId()))) {
-                        locationRepository.delete(town);
-                    }
-                }
-            }
+            deleteAddressIfOrphaned(officialAddress);
         }
-        
+
         if (postalAddress != null && !postalAddress.equals(officialAddress)) {
-            List<Address> orphanedAddresses = addressRepository.findOrphaned();
-            if (orphanedAddresses.stream().anyMatch(a -> a.getId().equals(postalAddress.getId()))) {
-                Location town = postalAddress.getTown();
-                addressRepository.delete(postalAddress);
-                
-                if (town != null) {
-                    List<Location> orphanedLocations = locationRepository.findOrphaned();
-                    if (orphanedLocations.stream().anyMatch(l -> l.getId().equals(town.getId()))) {
-                        locationRepository.delete(town);
-                    }
-                }
-            }
+            deleteAddressIfOrphaned(postalAddress);
+        }
+    }
+
+    private void deleteAddressIfOrphaned(Address address) {
+        if (address.getId() == null || addressRepository.isReferenced(address.getId())) {
+            return;
+        }
+
+        Location town = address.getTown();
+        addressRepository.delete(address);
+
+        if (town != null && town.getId() != null && !locationRepository.isReferenced(town.getId())) {
+            locationRepository.delete(town);
         }
     }
 }

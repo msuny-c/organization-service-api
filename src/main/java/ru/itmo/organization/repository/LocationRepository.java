@@ -37,12 +37,13 @@ public class LocationRepository {
         Location managed = entityManager.contains(location) ? location : entityManager.merge(location);
         entityManager.remove(managed);
     }
-    
-    public List<Location> findOrphaned() {
-        return entityManager.createQuery(
-                        "SELECT l FROM Location l WHERE NOT EXISTS " +
-                        "(SELECT a FROM Address a WHERE a.town = l)",
-                        Location.class)
-                .getResultList();
+
+    public boolean isReferenced(Long id) {
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(a.id) FROM Address a WHERE a.town.id = :id",
+                        Long.class)
+                .setParameter("id", id)
+                .getSingleResult();
+        return count != null && count > 0;
     }
 }
