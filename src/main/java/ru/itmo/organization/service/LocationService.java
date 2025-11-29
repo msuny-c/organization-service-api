@@ -1,5 +1,7 @@
 package ru.itmo.organization.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,9 @@ public class LocationService {
     private final LocationRepository locationRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
     
     @Transactional(readOnly = true)
     public List<LocationDto> findAll() {
@@ -64,6 +69,9 @@ public class LocationService {
         var existing = locationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
+            entityManager.createQuery("DELETE FROM Address a WHERE a.town.id = :locationId")
+                    .setParameter("locationId", id)
+                    .executeUpdate();
             organizationRepository.deleteAllByLocationTownId(id);
             locationRepository.delete(existing);
         } else {
