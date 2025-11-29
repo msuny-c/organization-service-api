@@ -12,9 +12,9 @@ import ru.itmo.organization.service.LocationService;
 import ru.itmo.organization.service.OrganizationService;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,46 +23,37 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/organizations")
 @RequiredArgsConstructor
 public class RestOrganizationController {
-    
+
     private final OrganizationService organizationService;
     private final LocationService locationService;
     private final CoordinatesService coordinatesService;
     private final AddressService addressService;
-    
+
     @GetMapping
     public ResponseEntity<Page<OrganizationDto>> listOrganizations(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sort,
-            @RequestParam(defaultValue = "asc") String dir,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String searchField) {
-        
-        Sort.Direction direction = "desc".equalsIgnoreCase(dir) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort));
-        
-        Page<OrganizationDto> organizations;
-        if (search != null && !search.trim().isEmpty()) {
-            organizations = organizationService.findBySearchTerm(search, searchField, pageable);
-        } else {
-            organizations = organizationService.findAll(pageable);
-        }
-        
+
+        Page<OrganizationDto> organizations = (search != null && !search.isBlank())
+                ? organizationService.findBySearchTerm(search, searchField, pageable)
+                : organizationService.findAll(pageable);
+
         return ResponseEntity.ok(organizations);
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<OrganizationDto> getOrganization(@PathVariable Long id) {
         OrganizationDto organization = organizationService.findById(id);
         return ResponseEntity.ok(organization);
     }
-    
+
     @PostMapping
     public ResponseEntity<OrganizationDto> createOrganization(@Valid @RequestBody OrganizationDto organization) {
         OrganizationDto created = organizationService.create(organization);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<OrganizationDto> updateOrganization(
             @PathVariable Long id,
@@ -70,7 +61,7 @@ public class RestOrganizationController {
         OrganizationDto updated = organizationService.update(id, organization);
         return ResponseEntity.ok(updated);
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteOrganization(@PathVariable Long id) {
         organizationService.delete(id);
@@ -78,22 +69,22 @@ public class RestOrganizationController {
         response.put("message", "Организация успешно удалена");
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/coordinates")
     public ResponseEntity<?> getCoordinates() {
         return ResponseEntity.ok(coordinatesService.findAll());
     }
-    
+
     @GetMapping("/addresses")
     public ResponseEntity<?> getAddresses() {
         return ResponseEntity.ok(addressService.findAll());
     }
-    
+
     @GetMapping("/locations")
     public ResponseEntity<?> getLocations() {
         return ResponseEntity.ok(locationService.findAll());
     }
-    
+
     @GetMapping("/types")
     public ResponseEntity<OrganizationType[]> getTypes() {
         return ResponseEntity.ok(OrganizationType.values());

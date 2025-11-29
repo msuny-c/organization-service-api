@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import ru.itmo.organization.dto.OrganizationDto;
@@ -114,11 +115,11 @@ public class OrganizationService {
     
     @Transactional(readOnly = true)
     public OrganizationDto findOneWithMinimalCoordinates() {
-        List<Organization> organizations = organizationRepository.findAllOrderedByCoordinatesWithDetails();
-        if (organizations.isEmpty()) {
+        Optional<Organization> organization = organizationRepository.findOneOrderedByCoordinatesWithDetails();
+        if (!organization.isPresent()) {
             throw new ResourceNotFoundException("Организации не найдены");
         }
-        return mapper.toDto(organizations.get(0));
+        return mapper.toDto(organization.get());
     }
     
     @Transactional(readOnly = true)
