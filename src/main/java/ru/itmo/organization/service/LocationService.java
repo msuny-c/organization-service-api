@@ -1,7 +1,5 @@
 package ru.itmo.organization.service;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +8,7 @@ import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.LocationRepository;
+import ru.itmo.organization.repository.OrganizationRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocationService {
 
     private final LocationRepository locationRepository;
+    private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<LocationDto> findAll() {
@@ -67,41 +64,19 @@ public class LocationService {
         var existing = locationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
-            List<Long> addressIds = entityManager.createQuery(
-                    "SELECT a.id FROM Address a WHERE a.town.id = :locationId", Long.class)
-                    .setParameter("locationId", id)
-                    .getResultList();
-            List<Long> coordinatesIds = entityManager.createQuery(
-                    "SELECT DISTINCT o.coordinates.id FROM Organization o WHERE o.postalAddress.id IN :addressIds",
-                    Long.class)
-                    .setParameter("addressIds", addressIds)
-                    .getResultList();
-
-            entityManager.createQuery(
-                    "DELETE FROM Organization o WHERE o.postalAddress.id IN (SELECT a.id FROM Address a WHERE a.town.id = :locationId)")
-                    .setParameter("locationId", id)
-                    .executeUpdate();
-
-            entityManager.createQuery(
-                    "UPDATE Organization o SET o.officialAddress = NULL WHERE o.officialAddress.id IN (SELECT a.id FROM Address a WHERE a.town.id = :locationId)")
-                    .setParameter("locationId", id)
-                    .executeUpdate();
-
-            entityManager.createQuery("DELETE FROM Address a WHERE a.town.id = :locationId")
-                    .setParameter("locationId", id)
-                    .executeUpdate();
-
-            if (!coordinatesIds.isEmpty()) {
-                entityManager.createQuery("DELETE FROM Coordinates c WHERE c.id IN :coordsIds")
-                        .setParameter("coordsIds", coordinatesIds)
-                        .executeUpdate();
+            List<Long> addressIds = organizationRepository.findAddressIdsByLocationId(id);
+            List<Long> coordinatesIds = organizationRepository.findCoordinatesIdsByAddressIds(addressIds);
+            organizationRepository.deleteOrganizationsByLocationId(id);
+            if (!addressIds.isEmpty()) {
+                organizationRepository.deleteAddressesByIds(addressIds);
             }
-
+            if (!coordinatesIds.isEmpty()) {
+                organizationRepository.deleteCoordinatesByIds(coordinatesIds);
+            }
             locationRepository.delete(existing);
         } else {
             if (locationRepository.isReferenced(id)) {
-                throw new IllegalStateException(
-                        "Локация используется адресами. Укажите cascadeDelete=true для удаления вместе с адресами и организациями.");
+                throw new IllegalStateException("Локация используется адресами. Укажите cascadeDelete=true для удаления вместе с адресами и организациями.");
             }
             locationRepository.delete(existing);
         }

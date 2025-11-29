@@ -24,6 +24,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import ru.itmo.organization.model.Address;
+import ru.itmo.organization.model.Coordinates;
+import ru.itmo.organization.model.Location;
 import ru.itmo.organization.model.Organization;
 import ru.itmo.organization.model.OrganizationType;
 
@@ -282,6 +285,77 @@ public class OrganizationRepository {
             var org = entityManager.find(Organization.class, id);
             if (org != null) {
                 entityManager.remove(org);
+            }
+        }
+    }
+
+    public List<Long> findAddressIdsByCoordinatesId(Long coordinatesId) {
+        return entityManager.createQuery(
+                "SELECT DISTINCT o.postalAddress.id FROM Organization o WHERE o.coordinates.id = :coordsId", Long.class)
+                .setParameter("coordsId", coordinatesId)
+                .getResultList();
+    }
+
+    public List<Long> findLocationIdsByAddressIds(List<Long> addressIds) {
+        if (addressIds.isEmpty()) return List.of();
+        return entityManager.createQuery(
+                "SELECT DISTINCT a.town.id FROM Address a WHERE a.id IN :addressIds", Long.class)
+                .setParameter("addressIds", addressIds)
+                .getResultList();
+    }
+
+    public void deleteAddressesByIds(List<Long> addressIds) {
+        for (Long id : addressIds) {
+            var address = entityManager.find(Address.class, id);
+            if (address != null) {
+                entityManager.remove(address);
+            }
+        }
+    }
+
+    public void deleteLocationsByIds(List<Long> locationIds) {
+        for (Long id : locationIds) {
+            var location = entityManager.find(Location.class, id);
+            if (location != null) {
+                entityManager.remove(location);
+            }
+        }
+    }
+
+    public List<Long> findAddressIdsByLocationId(Long locationId) {
+        return entityManager.createQuery(
+                "SELECT a.id FROM Address a WHERE a.town.id = :locationId", Long.class)
+                .setParameter("locationId", locationId)
+                .getResultList();
+    }
+
+    public List<Long> findCoordinatesIdsByAddressIds(List<Long> addressIds) {
+        if (addressIds.isEmpty()) return List.of();
+        return entityManager.createQuery(
+                "SELECT DISTINCT o.coordinates.id FROM Organization o WHERE o.postalAddress.id IN :addressIds", Long.class)
+                .setParameter("addressIds", addressIds)
+                .getResultList();
+    }
+
+    public void deleteOrganizationsByLocationId(Long locationId) {
+        List<Long> ids = entityManager.createQuery(
+                "SELECT o.id FROM Organization o WHERE o.postalAddress.town.id = :locationId OR o.officialAddress.town.id = :locationId",
+                Long.class)
+                .setParameter("locationId", locationId)
+                .getResultList();
+        for (Long id : ids) {
+            var org = entityManager.find(Organization.class, id);
+            if (org != null) {
+                entityManager.remove(org);
+            }
+        }
+    }
+
+    public void deleteCoordinatesByIds(List<Long> coordinatesIds) {
+        for (Long id : coordinatesIds) {
+            var coordinates = entityManager.find(Coordinates.class, id);
+            if (coordinates != null) {
+                entityManager.remove(coordinates);
             }
         }
     }

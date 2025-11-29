@@ -59,7 +59,15 @@ public class CoordinatesService {
         var existing = coordinatesRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Координаты с ID " + id + " не найдены"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
+            List<Long> addressIds = organizationRepository.findAddressIdsByCoordinatesId(id);
+            List<Long> locationIds = organizationRepository.findLocationIdsByAddressIds(addressIds);
             organizationRepository.deleteAllByCoordinatesId(id);
+            if (!addressIds.isEmpty()) {
+                organizationRepository.deleteAddressesByIds(addressIds);
+            }
+            if (!locationIds.isEmpty()) {
+                organizationRepository.deleteLocationsByIds(locationIds);
+            }
             coordinatesRepository.delete(existing);
         } else {
             if (coordinatesRepository.isReferenced(id)) {
