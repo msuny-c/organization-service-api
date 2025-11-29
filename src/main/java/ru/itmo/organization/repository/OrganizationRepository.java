@@ -245,23 +245,44 @@ public class OrganizationRepository {
     }
 
     public void deleteAllByOfficialAddressId(Long addressId) {
-        entityManager.createQuery(
-                "DELETE FROM Organization o WHERE o.officialAddress.id = :addressId")
+        List<Long> ids = entityManager.createQuery(
+                "SELECT o.id FROM Organization o WHERE o.officialAddress.id = :addressId",
+                Long.class)
                 .setParameter("addressId", addressId)
-                .executeUpdate();
+                .getResultList();
+        for (Long id : ids) {
+            var org = entityManager.find(Organization.class, id);
+            if (org != null) {
+                entityManager.remove(org);
+            }
+        }
     }
 
     public void deleteAllByPostalAddressId(Long addressId) {
-        entityManager.createQuery(
-                "DELETE FROM Organization o WHERE o.postalAddress.id = :addressId")
+        List<Long> ids = entityManager.createQuery(
+                "SELECT o.id FROM Organization o WHERE o.postalAddress.id = :addressId",
+                Long.class)
                 .setParameter("addressId", addressId)
-                .executeUpdate();
+                .getResultList();
+        for (Long id : ids) {
+            var org = entityManager.find(Organization.class, id);
+            if (org != null) {
+                entityManager.remove(org);
+            }
+        }
     }
 
     public void deleteAllByLocationTownId(Long locationId) {
-        entityManager.createQuery(
-                "DELETE FROM Organization o WHERE o.postalAddress.town.id = :locationId OR o.officialAddress.town.id = :locationId")
+        List<Long> ids = entityManager.createQuery(
+                "SELECT o.id FROM Organization o WHERE (o.postalAddress.town.id = :locationId) OR (o.officialAddress.town.id = :locationId)",
+                Long.class)
                 .setParameter("locationId", locationId)
-                .executeUpdate();
+                .getResultList();
+        for (Long id : ids) {
+            var org = entityManager.find(Organization.class, id);
+            if (org != null) {
+                entityManager.remove(org);
+            }
+        }
     }
 }
