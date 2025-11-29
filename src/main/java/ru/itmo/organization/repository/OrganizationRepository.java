@@ -236,4 +236,32 @@ public class OrganizationRepository {
         content.sort(Comparator.comparingInt(o -> positions.getOrDefault(o.getId(), Integer.MAX_VALUE)));
         return content;
     }
+
+    public void deleteAllByCoordinatesId(Long coordinatesId) {
+        entityManager.createQuery(
+                "DELETE FROM Organization o WHERE o.coordinates.id = :coordinatesId")
+                .setParameter("coordinatesId", coordinatesId)
+                .executeUpdate();
+    }
+
+    public void deleteAllByOfficialAddressId(Long addressId) {
+        entityManager.createQuery(
+                "DELETE FROM Organization o WHERE o.officialAddress.id = :addressId")
+                .setParameter("addressId", addressId)
+                .executeUpdate();
+    }
+
+    public void deleteAllByPostalAddressId(Long addressId) {
+        entityManager.createQuery(
+                "DELETE FROM Organization o WHERE o.postalAddress.id = :addressId")
+                .setParameter("addressId", addressId)
+                .executeUpdate();
+    }
+
+    public void deleteAllByLocationTownId(Long locationId) {
+        entityManager.createQuery(
+                "DELETE FROM Organization o WHERE o.postalAddress.town.id = :locationId OR o.officialAddress.town.id = :locationId")
+                .setParameter("locationId", locationId)
+                .executeUpdate();
+    }
 }

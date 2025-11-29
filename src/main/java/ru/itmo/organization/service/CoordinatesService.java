@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import ru.itmo.organization.dto.CoordinatesDto;
+import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.CoordinatesRepository;
+import ru.itmo.organization.repository.OrganizationRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CoordinatesService {
     
     private final CoordinatesRepository coordinatesRepository;
+    private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
     
     @Transactional(readOnly = true)
@@ -50,6 +53,20 @@ public class CoordinatesService {
         var existing = coordinatesRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Координаты с ID " + id + " не найдены"));
         coordinatesRepository.delete(existing);
+    }
+
+    public void deleteWithCascade(Long id, DeleteRequestDto request) {
+        var existing = coordinatesRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Координаты с ID " + id + " не найдены"));
+        if (Boolean.TRUE.equals(request.getCascadeDelete())) {
+            organizationRepository.deleteAllByCoordinatesId(id);
+            coordinatesRepository.delete(existing);
+        } else {
+            if (coordinatesRepository.isReferenced(id)) {
+                throw new IllegalStateException("Координаты используются организациями. Укажите cascadeDelete=true для удаления вместе с организациями.");
+            }
+            coordinatesRepository.delete(existing);
+        }
     }
 }
 

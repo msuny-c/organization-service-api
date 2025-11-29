@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import ru.itmo.organization.dto.LocationDto;
+import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.LocationRepository;
+import ru.itmo.organization.repository.OrganizationRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocationService {
     
     private final LocationRepository locationRepository;
+    private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
     
     @Transactional(readOnly = true)
@@ -55,5 +58,19 @@ public class LocationService {
             throw new IllegalStateException("Нельзя удалить локацию, используемую адресами");
         }
         locationRepository.delete(existing);
+    }
+
+    public void deleteWithCascade(Long id, DeleteRequestDto request) {
+        var existing = locationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
+        if (Boolean.TRUE.equals(request.getCascadeDelete())) {
+            organizationRepository.deleteAllByLocationTownId(id);
+            locationRepository.delete(existing);
+        } else {
+            if (locationRepository.isReferenced(id)) {
+                throw new IllegalStateException("Локация используется адресами. Укажите cascadeDelete=true для удаления вместе с адресами и организациями.");
+            }
+            locationRepository.delete(existing);
+        }
     }
 }

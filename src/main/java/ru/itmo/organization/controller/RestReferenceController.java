@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.itmo.organization.dto.AddressDto;
 import ru.itmo.organization.dto.CoordinatesDto;
+import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.dto.LocationDto;
 import ru.itmo.organization.service.AddressService;
 import ru.itmo.organization.service.CoordinatesService;
@@ -46,8 +47,9 @@ public class RestReferenceController {
     }
 
     @DeleteMapping("/coordinates/{id}")
-    public ResponseEntity<?> deleteCoordinates(@PathVariable Long id) {
-        coordinatesService.delete(id);
+    public ResponseEntity<?> deleteCoordinates(@PathVariable Long id, @RequestBody(required = false) DeleteRequestDto request) {
+        if (request == null) request = new DeleteRequestDto();
+        coordinatesService.deleteWithCascade(id, request);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Координаты успешно удалены");
         return ResponseEntity.ok(response);
@@ -76,8 +78,9 @@ public class RestReferenceController {
     }
 
     @DeleteMapping("/addresses/{id}")
-    public ResponseEntity<?> deleteAddress(@PathVariable Long id) {
-        addressService.delete(id);
+    public ResponseEntity<?> deleteAddress(@PathVariable Long id, @RequestBody(required = false) DeleteRequestDto request) {
+        if (request == null) request = new DeleteRequestDto();
+        addressService.deleteWithCascade(id, request);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Адрес успешно удален");
         return ResponseEntity.ok(response);
@@ -106,8 +109,9 @@ public class RestReferenceController {
     }
 
     @DeleteMapping("/locations/{id}")
-    public ResponseEntity<?> deleteLocation(@PathVariable Long id) {
-        locationService.delete(id);
+    public ResponseEntity<?> deleteLocation(@PathVariable Long id, @RequestBody(required = false) DeleteRequestDto request) {
+        if (request == null) request = new DeleteRequestDto();
+        locationService.deleteWithCascade(id, request);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Локация успешно удалена");
         return ResponseEntity.ok(response);
