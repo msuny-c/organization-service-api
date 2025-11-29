@@ -4,6 +4,9 @@ import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +28,9 @@ public class RestReferenceController {
     private final LocationService locationService;
 
     @GetMapping("/coordinates")
-    public ResponseEntity<?> getCoordinates() {
-        return ResponseEntity.ok(coordinatesService.findAll());
+    public ResponseEntity<Page<CoordinatesDto>> getCoordinates(
+            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+        return ResponseEntity.ok(coordinatesService.findAll(pageable));
     }
 
     @GetMapping("/coordinates/{id}")
@@ -60,8 +64,14 @@ public class RestReferenceController {
     }
 
     @GetMapping("/addresses")
-    public ResponseEntity<?> getAddresses() {
-        return ResponseEntity.ok(addressService.findAll());
+    public ResponseEntity<Page<AddressDto>> getAddresses(
+            @PageableDefault(size = 10, sort = "id") Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String searchField) {
+        Page<AddressDto> addresses = (search != null && !search.isBlank())
+                ? addressService.findBySearchTerm(search, searchField, pageable)
+                : addressService.findAll(pageable);
+        return ResponseEntity.ok(addresses);
     }
 
     @GetMapping("/addresses/{id}")
@@ -95,8 +105,14 @@ public class RestReferenceController {
     }
 
     @GetMapping("/locations")
-    public ResponseEntity<?> getLocations() {
-        return ResponseEntity.ok(locationService.findAll());
+    public ResponseEntity<Page<LocationDto>> getLocations(
+            @PageableDefault(size = 10, sort = "id") Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String searchField) {
+        Page<LocationDto> locations = (search != null && !search.isBlank())
+                ? locationService.findBySearchTerm(search, searchField, pageable)
+                : locationService.findAll(pageable);
+        return ResponseEntity.ok(locations);
     }
 
     @GetMapping("/locations/{id}")

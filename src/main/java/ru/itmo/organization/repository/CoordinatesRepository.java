@@ -4,6 +4,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Repository;
 import ru.itmo.organization.model.Coordinates;
 
@@ -49,5 +52,21 @@ public class CoordinatesRepository {
                 .setParameter("id", id)
                 .getSingleResult();
         return count != null && count > 0;
+    }
+
+    public Page<Coordinates> findAll(Pageable pageable) {
+        List<Coordinates> coordinates = entityManager.createQuery(
+                        "SELECT c FROM Coordinates c ORDER BY c." + pageable.getSort().toString().replace(":", " "),
+                        Coordinates.class)
+                .setFirstResult((int) pageable.getOffset())
+                .setMaxResults(pageable.getPageSize())
+                .getResultList();
+
+        Long total = entityManager.createQuery(
+                        "SELECT COUNT(c) FROM Coordinates c",
+                        Long.class)
+                .getSingleResult();
+
+        return new PageImpl<>(coordinates, pageable, total);
     }
 }

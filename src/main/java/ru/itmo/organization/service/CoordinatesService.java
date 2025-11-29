@@ -3,6 +3,8 @@ package ru.itmo.organization.service;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import ru.itmo.organization.dto.CoordinatesDto;
 import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
@@ -25,6 +27,11 @@ public class CoordinatesService {
     @Transactional(readOnly = true)
     public List<CoordinatesDto> findAll() {
         return coordinatesRepository.findAll().stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CoordinatesDto> findAll(Pageable pageable) {
+        return coordinatesRepository.findAll(pageable).map(mapper::toDto);
     }
 
     @Transactional(readOnly = true)

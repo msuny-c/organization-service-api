@@ -3,6 +3,8 @@ package ru.itmo.organization.service;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import ru.itmo.organization.dto.AddressDto;
 import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
@@ -25,6 +27,16 @@ public class AddressService {
     @Transactional(readOnly = true)
     public List<AddressDto> findAll() {
         return repository.findAll().stream().map(mapper::toDto).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AddressDto> findAll(Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AddressDto> findBySearchTerm(String searchTerm, String searchField, Pageable pageable) {
+        return repository.search(searchTerm, searchField, pageable).map(mapper::toDto);
     }
 
     @Transactional(readOnly = true)
