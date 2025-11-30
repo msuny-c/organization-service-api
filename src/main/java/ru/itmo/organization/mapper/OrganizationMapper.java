@@ -107,6 +107,13 @@ public class OrganizationMapper {
         Address address = new Address();
         address.setId(dto.getId());
         address.setZipCode(dto.getZipCode());
+        
+        if (dto.getTownId() != null) {
+            Location town = new Location();
+            town.setId(dto.getTownId());
+            address.setTown(town);
+        }
+        
         return address;
     }
     
