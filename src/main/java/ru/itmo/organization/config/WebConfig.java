@@ -29,7 +29,6 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Сначала проверяем внешнюю папку со статическими файлами
         if (staticFilesPath != null && !staticFilesPath.isEmpty()) {
             File staticDir = new File(staticFilesPath);
             if (staticDir.exists() && staticDir.isDirectory()) {
@@ -41,12 +40,10 @@ public class WebConfig implements WebMvcConfigurer {
             }
         }
         
-        // Раздаем статические файлы frontend из папки resources/static
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
                 .resourceChain(true);
         
-        // Раздаем API endpoints отдельно
         registry.addResourceHandler("/api/**")
                 .addResourceLocations("classpath:/static/");
     }
