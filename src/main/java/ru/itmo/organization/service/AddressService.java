@@ -10,6 +10,7 @@ import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.AddressRepository;
+import ru.itmo.organization.repository.LocationRepository;
 import ru.itmo.organization.repository.OrganizationRepository;
 
 import org.springframework.stereotype.Service;
@@ -22,6 +23,8 @@ public class AddressService {
     
     private final AddressRepository repository;
     private final OrganizationRepository organizationRepository;
+    private final LocationRepository locationRepository;
+    private final OrganizationService organizationService;
     private final OrganizationMapper mapper;
     
     @Transactional(readOnly = true)
@@ -66,21 +69,45 @@ public class AddressService {
         if (repository.isReferenced(id)) {
             throw new IllegalStateException("Нельзя удалить адрес, используемый организациями");
         }
+        
+        var town = existing.getTown();
         repository.delete(existing);
+        
+        if (town != null && town.getId() != null && !locationRepository.isReferenced(town.getId())) {
+            locationRepository.delete(town);
+        }
     }
 
     public void deleteWithCascade(Long id, DeleteRequestDto request) {
         var existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
-            organizationRepository.deleteAllByOfficialAddressId(id);
-            organizationRepository.deleteAllByPostalAddressId(id);
+            var organizationsByOfficial = organizationRepository.findAllByOfficialAddressId(id);
+            var organizationsByPostal = organizationRepository.findAllByPostalAddressId(id);
+            
+            organizationsByOfficial.forEach(org -> organizationService.delete(org.getId()));
+            organizationsByPostal.forEach(org -> {
+                if (!organizationsByOfficial.contains(org)) {
+                    organizationService.delete(org.getId());
+                }
+            });
+            
+            var town = existing.getTown();
             repository.delete(existing);
+            
+            if (town != null && town.getId() != null && !locationRepository.isReferenced(town.getId())) {
+                locationRepository.delete(town);
+            }
         } else {
             if (repository.isReferenced(id)) {
                 throw new IllegalStateException("Адрес используется организациями. Укажите cascadeDelete=true для удаления вместе с организациями.");
             }
+            var town = existing.getTown();
             repository.delete(existing);
+            
+            if (town != null && town.getId() != null && !locationRepository.isReferenced(town.getId())) {
+                locationRepository.delete(town);
+            }
         }
     }
 }

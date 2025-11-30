@@ -275,6 +275,22 @@ public class OrganizationRepository {
         }
     }
 
+    public List<Organization> findAllByOfficialAddressId(Long addressId) {
+        return entityManager.createQuery(
+                "SELECT o FROM Organization o WHERE o.officialAddress.id = :addressId",
+                Organization.class)
+                .setParameter("addressId", addressId)
+                .getResultList();
+    }
+
+    public List<Organization> findAllByPostalAddressId(Long addressId) {
+        return entityManager.createQuery(
+                "SELECT o FROM Organization o WHERE o.postalAddress.id = :addressId",
+                Organization.class)
+                .setParameter("addressId", addressId)
+                .getResultList();
+    }
+
     public void deleteAllByLocationTownId(Long locationId) {
         List<Long> ids = entityManager.createQuery(
                 "SELECT o.id FROM Organization o WHERE (o.postalAddress.town.id = :locationId) OR (o.officialAddress.town.id = :locationId)",
