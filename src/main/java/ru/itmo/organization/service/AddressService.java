@@ -77,7 +77,7 @@ public class AddressService {
             Long locationId = existing.getTown().getId();
             
             List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
-            boolean shouldDeleteLocation = referencedAddressIds.size() == 1 && referencedAddressIds.contains(id);
+            boolean shouldDeleteLocation = referencedAddressIds.size() == 1;
             
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
