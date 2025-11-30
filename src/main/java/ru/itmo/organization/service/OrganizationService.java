@@ -27,6 +27,7 @@ public class OrganizationService {
     private final AddressRepository addressRepository;
     private final LocationRepository locationRepository;
     private final OrganizationMapper mapper;
+    private final WebSocketService webSocketService;
     
     @Transactional(readOnly = true)
     public Page<OrganizationDto> findAll(Pageable pageable) {
@@ -68,6 +69,7 @@ public class OrganizationService {
         }
         
         Organization saved = organizationRepository.save(organization);
+        webSocketService.broadcastOrganizationsUpdate();
         return mapper.toDto(saved);
     }
     
@@ -101,6 +103,7 @@ public class OrganizationService {
         }
         
         Organization updated = organizationRepository.save(existing);
+        webSocketService.broadcastOrganizationsUpdate();
         return mapper.toDto(updated);
     }
     
@@ -115,6 +118,7 @@ public class OrganizationService {
         organizationRepository.delete(organization);
         
         cleanupOrphanedObjects(coordinates, officialAddress, postalAddress);
+        webSocketService.broadcastOrganizationsUpdate();
     }
     
     @Transactional(readOnly = true)
@@ -171,6 +175,7 @@ public class OrganizationService {
         cleanupOrphanedObjects(coordinates, officialAddress, postalAddress);
         
         Organization updated = organizationRepository.save(absorbing);
+        webSocketService.broadcastOrganizationsUpdate();
         return mapper.toDto(updated);
     }
     

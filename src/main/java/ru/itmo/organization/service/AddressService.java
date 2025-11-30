@@ -23,6 +23,7 @@ public class AddressService {
     private final AddressRepository repository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
+    private final WebSocketService webSocketService;
     
     @Transactional(readOnly = true)
     public List<AddressDto> findAll() {
@@ -49,6 +50,7 @@ public class AddressService {
     public AddressDto create(AddressDto dto) {
         var entity = mapper.toEntity(dto);
         var saved = repository.save(entity);
+        webSocketService.broadcastAddressesUpdate();
         return mapper.toDto(saved);
     }
 
@@ -57,6 +59,7 @@ public class AddressService {
                 .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
         existing.setZipCode(dto.getZipCode());
         var saved = repository.save(existing);
+        webSocketService.broadcastAddressesUpdate();
         return mapper.toDto(saved);
     }
 
@@ -70,6 +73,7 @@ public class AddressService {
         Long locationId = existing.getTown().getId();
         
         repository.delete(existing);
+        webSocketService.broadcastAddressesUpdate();
         
         List<Long> remainingAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
         System.out.println("После удаления адреса ID=" + id + ", осталось адресов с локацией ID=" + locationId + ": " + remainingAddressIds.size());
@@ -77,6 +81,7 @@ public class AddressService {
         if (remainingAddressIds.isEmpty()) {
             System.out.println("Удаляем локацию ID=" + locationId);
             organizationRepository.deleteLocationsByIds(List.of(locationId));
+            webSocketService.broadcastLocationsUpdate();
         } else {
             System.out.println("Локацию не удаляем, есть еще адреса: " + remainingAddressIds);
         }
@@ -93,22 +98,27 @@ public class AddressService {
             boolean shouldDeleteLocation = referencedAddressIds.size() == 1;
             
             repository.delete(existing);
+            webSocketService.broadcastAddressesUpdate();
             
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
+            webSocketService.broadcastOrganizationsUpdate();
             
             if (!coordinatesIds.isEmpty()) {
                 organizationRepository.deleteCoordinatesByIds(coordinatesIds);
+                webSocketService.broadcastCoordinatesUpdate();
             }
             
             if (shouldDeleteLocation) {
                 organizationRepository.deleteLocationsByIds(List.of(locationId));
+                webSocketService.broadcastLocationsUpdate();
             }
         } else {
             if (repository.isReferenced(id)) {
                 throw new IllegalStateException("Адрес используется организациями. Укажите cascadeDelete=true для удаления вместе с организациями.");
             }
             repository.delete(existing);
+            webSocketService.broadcastAddressesUpdate();
         }
     }
 }
