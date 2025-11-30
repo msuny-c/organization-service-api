@@ -63,18 +63,6 @@ public class LocationRepository {
         return count != null ? count : 0;
     }
 
-    public Long getCoordinatesId(Long locationId) {
-        try {
-            return entityManager.createQuery(
-                            "SELECT l.coordinates.id FROM Location l WHERE l.id = :id",
-                            Long.class)
-                    .setParameter("id", locationId)
-                    .getSingleResult();
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     public Page<Location> findAll(Pageable pageable) {
         List<Location> locations = entityManager.createQuery(
                         "SELECT l FROM Location l ORDER BY l." + pageable.getSort().toString().replace(":", " "),
