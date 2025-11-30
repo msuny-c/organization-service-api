@@ -74,7 +74,7 @@ public class AddressService {
                 .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
             List<Long> coordinatesIds = organizationRepository.findCoordinatesIdsByAddressIds(List.of(id));
-            List<Long> locationIds = organizationRepository.findLocationIdsByAddressIds(List.of(id));
+            Long locationId = existing.getTown().getId();
             
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
@@ -83,8 +83,9 @@ public class AddressService {
                 organizationRepository.deleteCoordinatesByIds(coordinatesIds);
             }
             
-            if (!locationIds.isEmpty()) {
-                organizationRepository.deleteLocationsByIds(locationIds);
+            List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
+            if (referencedAddressIds.isEmpty()) {
+                organizationRepository.deleteLocationsByIds(List.of(locationId));
             }
             
             repository.delete(existing);
