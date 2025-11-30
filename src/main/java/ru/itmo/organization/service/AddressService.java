@@ -73,8 +73,20 @@ public class AddressService {
         var existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
+            List<Long> coordinatesIds = organizationRepository.findCoordinatesIdsByAddressIds(List.of(id));
+            List<Long> locationIds = organizationRepository.findLocationIdsByAddressIds(List.of(id));
+            
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
+            
+            if (!coordinatesIds.isEmpty()) {
+                organizationRepository.deleteCoordinatesByIds(coordinatesIds);
+            }
+            
+            if (!locationIds.isEmpty()) {
+                organizationRepository.deleteLocationsByIds(locationIds);
+            }
+            
             repository.delete(existing);
         } else {
             if (repository.isReferenced(id)) {
