@@ -288,7 +288,7 @@ public class OrganizationService {
             deleteAddressIfOrphaned(officialAddress);
         }
 
-        if (postalAddress != null && !postalAddress.equals(officialAddress)) {
+        if (postalAddress != null && (officialAddress == null || !postalAddress.getId().equals(officialAddress.getId()))) {
             deleteAddressIfOrphaned(postalAddress);
         }
     }
