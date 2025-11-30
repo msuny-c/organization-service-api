@@ -10,7 +10,6 @@ import ru.itmo.organization.dto.DeleteRequestDto;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.AddressRepository;
-import ru.itmo.organization.repository.LocationRepository;
 import ru.itmo.organization.repository.OrganizationRepository;
 
 import org.springframework.stereotype.Service;
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AddressService {
     
     private final AddressRepository repository;
-    private final LocationRepository locationRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
     
@@ -74,26 +72,15 @@ public class AddressService {
     public void deleteWithCascade(Long id, DeleteRequestDto request) {
         var existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Адрес с ID " + id + " не найден"));
-        
-        var townId = existing.getTown() != null ? existing.getTown().getId() : null;
-        
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
+            repository.delete(existing);
         } else {
             if (repository.isReferenced(id)) {
                 throw new IllegalStateException("Адрес используется организациями. Укажите cascadeDelete=true для удаления вместе с организациями.");
             }
-        }
-        
-        repository.delete(existing);
-        
-        if (townId != null && locationRepository.countByTownId(townId) == 0) {
-            try {
-                locationRepository.findById(townId).ifPresent(locationRepository::delete);
-            } catch (Exception e) {
-                System.err.println("Error deleting orphaned location: " + e.getMessage());
-            }
+            repository.delete(existing);
         }
     }
 }

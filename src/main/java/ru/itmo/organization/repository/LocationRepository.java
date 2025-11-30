@@ -54,15 +54,6 @@ public class LocationRepository {
         return count != null && count > 0;
     }
 
-    public long countByTownId(Long id) {
-        Long count = entityManager.createQuery(
-                        "SELECT COUNT(a.id) FROM Address a WHERE a.town.id = :id",
-                        Long.class)
-                .setParameter("id", id)
-                .getSingleResult();
-        return count != null ? count : 0;
-    }
-
     public Page<Location> findAll(Pageable pageable) {
         List<Location> locations = entityManager.createQuery(
                         "SELECT l FROM Location l ORDER BY l." + pageable.getSort().toString().replace(":", " "),
