@@ -26,7 +26,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import ru.itmo.organization.model.Address;
 import ru.itmo.organization.model.Coordinates;
-import ru.itmo.organization.model.Location;
 import ru.itmo.organization.model.Organization;
 import ru.itmo.organization.model.OrganizationType;
 
@@ -315,10 +314,10 @@ public class OrganizationRepository {
 
     public void deleteLocationsByIds(List<Long> locationIds) {
         for (Long id : locationIds) {
-            var location = entityManager.find(Location.class, id);
-            if (location != null) {
-                entityManager.remove(location);
-            }
+            entityManager.createQuery(
+                    "DELETE FROM Location l WHERE l.id = :id")
+                    .setParameter("id", id)
+                    .executeUpdate();
         }
     }
 
