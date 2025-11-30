@@ -74,7 +74,10 @@ public class AddressService {
         repository.delete(existing);
         
         if (shouldDeleteLocation) {
-            organizationRepository.deleteLocationsByIds(List.of(locationId));
+            List<Long> remainingAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
+            if (remainingAddressIds.isEmpty()) {
+                organizationRepository.deleteLocationsByIds(List.of(locationId));
+            }
         }
     }
 
