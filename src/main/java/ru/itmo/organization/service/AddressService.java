@@ -76,6 +76,9 @@ public class AddressService {
             List<Long> coordinatesIds = organizationRepository.findCoordinatesIdsByAddressIds(List.of(id));
             Long locationId = existing.getTown().getId();
             
+            List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
+            boolean shouldDeleteLocation = referencedAddressIds.size() == 1 && referencedAddressIds.contains(id);
+            
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
             
@@ -83,12 +86,11 @@ public class AddressService {
                 organizationRepository.deleteCoordinatesByIds(coordinatesIds);
             }
             
-            List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
-            if (referencedAddressIds.isEmpty()) {
+            repository.delete(existing);
+            
+            if (shouldDeleteLocation) {
                 organizationRepository.deleteLocationsByIds(List.of(locationId));
             }
-            
-            repository.delete(existing);
         } else {
             if (repository.isReferenced(id)) {
                 throw new IllegalStateException("Адрес используется организациями. Укажите cascadeDelete=true для удаления вместе с организациями.");
