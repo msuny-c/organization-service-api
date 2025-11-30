@@ -19,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -138,19 +139,37 @@ public class OrganizationRepository {
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
-        CriteriaQuery<Long> idQuery = cb.createQuery(Long.class);
+        CriteriaQuery<Object[]> idQuery = cb.createQuery(Object[].class);
         Root<Organization> idRoot = idQuery.from(Organization.class);
         Predicate idPredicate = buildSearchPredicate(searchTerm, searchField, cb, idRoot);
         if (idPredicate != null) {
             idQuery.where(idPredicate);
         }
-        idQuery.select(idRoot.get("id"));
+        
+        List<Path<?>> selectPaths = new ArrayList<>();
+        selectPaths.add(idRoot.get("id"));
+        
+        Sort sort = pageable.getSort();
+        if (sort != null && !sort.isUnsorted()) {
+            for (Sort.Order sortOrder : sort) {
+                Path<?> sortPath = resolveSortPath(sortOrder.getProperty(), idRoot);
+                if (sortPath != null && !selectPaths.contains(sortPath)) {
+                    selectPaths.add(sortPath);
+                }
+            }
+        }
+        
+        idQuery.multiselect(selectPaths.toArray(new Path[0]));
         applySort(pageable.getSort(), cb, idQuery, idRoot);
 
-        List<Long> ids = entityManager.createQuery(idQuery)
+        List<Object[]> results = entityManager.createQuery(idQuery)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
+        
+        List<Long> ids = results.stream()
+                .map(row -> (Long) row[0])
+                .collect(Collectors.toList());
 
         if (ids.isEmpty()) {
             return new PageImpl<>(List.of(), pageable, total);
@@ -247,31 +266,17 @@ public class OrganizationRepository {
     }
 
     public void deleteAllByOfficialAddressId(Long addressId) {
-        List<Long> ids = entityManager.createQuery(
-                "SELECT o.id FROM Organization o WHERE o.officialAddress.id = :addressId",
-                Long.class)
+        entityManager.createNativeQuery(
+                "DELETE FROM organization WHERE official_address_id = :addressId")
                 .setParameter("addressId", addressId)
-                .getResultList();
-        for (Long id : ids) {
-            var org = entityManager.find(Organization.class, id);
-            if (org != null) {
-                entityManager.remove(org);
-            }
-        }
+                .executeUpdate();
     }
 
     public void deleteAllByPostalAddressId(Long addressId) {
-        List<Long> ids = entityManager.createQuery(
-                "SELECT o.id FROM Organization o WHERE o.postalAddress.id = :addressId",
-                Long.class)
+        entityManager.createNativeQuery(
+                "DELETE FROM organization WHERE postal_address_id = :addressId")
                 .setParameter("addressId", addressId)
-                .getResultList();
-        for (Long id : ids) {
-            var org = entityManager.find(Organization.class, id);
-            if (org != null) {
-                entityManager.remove(org);
-            }
-        }
+                .executeUpdate();
     }
 
     public void deleteAllByLocationTownId(Long locationId) {
@@ -315,7 +320,7 @@ public class OrganizationRepository {
     public void deleteLocationsByIds(List<Long> locationIds) {
         for (Long id : locationIds) {
             entityManager.createNativeQuery(
-                    "DELETE FROM locations WHERE id = :id")
+                    "DELETE FROM location WHERE id = :id")
                     .setParameter("id", id)
                     .executeUpdate();
         }

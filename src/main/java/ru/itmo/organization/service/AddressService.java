@@ -78,7 +78,7 @@ public class AddressService {
             System.out.println("Удаляем локацию ID=" + locationId);
             organizationRepository.deleteLocationsByIds(List.of(locationId));
         } else {
-            System.out.println("Локацию не удаляем, есть еще адресы: " + remainingAddressIds);
+            System.out.println("Локацию не удаляем, есть еще адреса: " + remainingAddressIds);
         }
     }
 
@@ -92,14 +92,14 @@ public class AddressService {
             List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
             boolean shouldDeleteLocation = referencedAddressIds.size() == 1;
             
+            repository.delete(existing);
+            
             organizationRepository.deleteAllByOfficialAddressId(id);
             organizationRepository.deleteAllByPostalAddressId(id);
             
             if (!coordinatesIds.isEmpty()) {
                 organizationRepository.deleteCoordinatesByIds(coordinatesIds);
             }
-            
-            repository.delete(existing);
             
             if (shouldDeleteLocation) {
                 organizationRepository.deleteLocationsByIds(List.of(locationId));
