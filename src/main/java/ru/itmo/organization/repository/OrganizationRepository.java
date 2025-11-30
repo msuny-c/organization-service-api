@@ -314,8 +314,8 @@ public class OrganizationRepository {
 
     public void deleteLocationsByIds(List<Long> locationIds) {
         for (Long id : locationIds) {
-            entityManager.createQuery(
-                    "DELETE FROM Location l WHERE l.id = :id")
+            entityManager.createNativeQuery(
+                    "DELETE FROM locations WHERE id = :id")
                     .setParameter("id", id)
                     .executeUpdate();
         }
