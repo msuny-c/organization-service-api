@@ -71,9 +71,15 @@ public class AddressService {
         List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
         boolean shouldDeleteLocation = referencedAddressIds.size() == 1;
         
+        System.out.println("DEBUG: Удаление адреса ID=" + id + ", локация ID=" + locationId);
+        System.out.println("DEBUG: Найдено адресов с этой локацией: " + referencedAddressIds.size());
+        System.out.println("DEBUG: ID адресов: " + referencedAddressIds);
+        System.out.println("DEBUG: Нужно удалить локацию: " + shouldDeleteLocation);
+        
         repository.delete(existing);
         
         if (shouldDeleteLocation) {
+            System.out.println("DEBUG: Удаляем локацию ID=" + locationId);
             organizationRepository.deleteLocationsByIds(List.of(locationId));
         }
     }
