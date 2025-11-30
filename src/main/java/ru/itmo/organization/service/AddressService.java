@@ -66,7 +66,16 @@ public class AddressService {
         if (repository.isReferenced(id)) {
             throw new IllegalStateException("Нельзя удалить адрес, используемый организациями");
         }
+        
+        Long locationId = existing.getTown().getId();
+        List<Long> referencedAddressIds = organizationRepository.findAddressIdsByLocationId(locationId);
+        boolean shouldDeleteLocation = referencedAddressIds.size() == 1;
+        
         repository.delete(existing);
+        
+        if (shouldDeleteLocation) {
+            organizationRepository.deleteLocationsByIds(List.of(locationId));
+        }
     }
 
     public void deleteWithCascade(Long id, DeleteRequestDto request) {
