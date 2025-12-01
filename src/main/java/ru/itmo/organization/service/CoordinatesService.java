@@ -1,19 +1,19 @@
 package ru.itmo.organization.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import ru.itmo.organization.dto.CoordinatesDto;
-import ru.itmo.organization.dto.DeleteRequestDto;
-import ru.itmo.organization.mapper.OrganizationMapper;
-import ru.itmo.organization.exception.ResourceNotFoundException;
-import ru.itmo.organization.repository.CoordinatesRepository;
-import ru.itmo.organization.repository.OrganizationRepository;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.itmo.organization.dto.CoordinatesDto;
+import ru.itmo.organization.dto.DeleteRequestDto;
+import ru.itmo.organization.exception.ResourceNotFoundException;
+import ru.itmo.organization.mapper.OrganizationMapper;
+import ru.itmo.organization.repository.CoordinatesRepository;
+import ru.itmo.organization.repository.OrganizationRepository;
 
 @Service
 @Transactional
@@ -68,13 +68,28 @@ public class CoordinatesService {
         if (Boolean.TRUE.equals(request.getCascadeDelete())) {
             List<Long> addressIds = organizationRepository.findAddressIdsByCoordinatesId(id);
             List<Long> locationIds = organizationRepository.findLocationIdsByAddressIds(addressIds);
+            
             organizationRepository.deleteAllByCoordinatesId(id);
+            
             if (!addressIds.isEmpty()) {
                 organizationRepository.deleteAddressesByIds(addressIds);
             }
-            if (!locationIds.isEmpty()) {
-                organizationRepository.deleteLocationsByIds(locationIds);
+            
+            List<Long> stillReferencedLocations = new ArrayList<>();
+            for (Long locationId : locationIds) {
+                if (organizationRepository.isLocationReferenced(locationId)) {
+                    stillReferencedLocations.add(locationId);
+                }
             }
+            
+            List<Long> locationsToDelete = locationIds.stream()
+                    .filter(locationId -> !stillReferencedLocations.contains(locationId))
+                    .collect(Collectors.toList());
+            
+            if (!locationsToDelete.isEmpty()) {
+                organizationRepository.deleteLocationsByIds(locationsToDelete);
+            }
+            
             coordinatesRepository.delete(existing);
         } else {
             if (coordinatesRepository.isReferenced(id)) {
