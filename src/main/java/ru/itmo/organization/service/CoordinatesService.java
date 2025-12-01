@@ -14,6 +14,7 @@ import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.repository.CoordinatesRepository;
 import ru.itmo.organization.repository.OrganizationRepository;
+import ru.itmo.organization.service.WebSocketService;
 
 @Service
 @Transactional
@@ -23,6 +24,7 @@ public class CoordinatesService {
     private final CoordinatesRepository coordinatesRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMapper mapper;
+    private final WebSocketService webSocketService;
     
     @Transactional(readOnly = true)
     public List<CoordinatesDto> findAll() {
@@ -91,11 +93,21 @@ public class CoordinatesService {
             }
             
             coordinatesRepository.delete(existing);
+            
+            webSocketService.broadcastOrganizationsUpdate();
+            webSocketService.broadcastCoordinatesUpdate();
+            if (!addressIds.isEmpty()) {
+                webSocketService.broadcastAddressesUpdate();
+            }
+            if (!locationsToDelete.isEmpty()) {
+                webSocketService.broadcastLocationsUpdate();
+            }
         } else {
             if (coordinatesRepository.isReferenced(id)) {
                 throw new IllegalStateException("Координаты используются организациями. Укажите cascadeDelete=true для удаления вместе с организациями.");
             }
             coordinatesRepository.delete(existing);
+            webSocketService.broadcastCoordinatesUpdate();
         }
     }
 }
