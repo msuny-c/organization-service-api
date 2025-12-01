@@ -335,6 +335,15 @@ public class OrganizationRepository {
         return count > 0;
     }
 
+    public boolean isAddressReferenced(Long addressId) {
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(o.id) FROM Organization o WHERE o.officialAddress.id = :addressId OR o.postalAddress.id = :addressId",
+                        Long.class)
+                .setParameter("addressId", addressId)
+                .getSingleResult();
+        return count > 0;
+    }
+
     public List<Long> findAddressIdsByLocationId(Long locationId) {
         return entityManager.createQuery(
                 "SELECT a.id FROM Address a WHERE a.town.id = :locationId", Long.class)
