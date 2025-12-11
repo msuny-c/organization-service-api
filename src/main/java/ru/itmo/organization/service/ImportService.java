@@ -1,0 +1,128 @@
+package ru.itmo.organization.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
+import ru.itmo.organization.dto.ImportOperationDto;
+import ru.itmo.organization.dto.OrganizationDto;
+import ru.itmo.organization.exception.ResourceNotFoundException;
+import ru.itmo.organization.model.ImportOperation;
+import ru.itmo.organization.model.ImportStatus;
+import ru.itmo.organization.repository.ImportOperationRepository;
+
+@Service
+@RequiredArgsConstructor
+public class ImportService {
+
+    private final ImportOperationRepository importOperationRepository;
+    private final OrganizationService organizationService;
+    private final WebSocketService webSocketService;
+    private final ObjectMapper objectMapper;
+    private final PlatformTransactionManager transactionManager;
+
+    public ImportOperationDto importOrganizations(MultipartFile file, UserContext userContext) {
+        ImportOperation operation = startOperation(file, userContext.username());
+        try {
+            List<OrganizationDto> records = parseFile(file);
+            int added = executeTransactionalImport(records);
+            operation.markSuccess(added);
+            importOperationRepository.save(operation);
+            if (added > 0) {
+                webSocketService.broadcastOrganizationsUpdate();
+            }
+            return ImportOperationDto.fromEntity(operation);
+        } catch (Exception ex) {
+            operation.markFailed(extractMessage(ex));
+            importOperationRepository.save(operation);
+            if (ex instanceof IllegalArgumentException) {
+                throw ex;
+            }
+            throw new IllegalArgumentException("Импорт не выполнен: " + extractMessage(ex), ex);
+        }
+    }
+
+    public List<ImportOperationDto> listOperations(UserContext userContext) {
+        List<ImportOperation> operations = userContext.admin()
+                ? importOperationRepository.findAll()
+                : importOperationRepository.findAllForUser(userContext.username());
+        return operations.stream()
+                .map(ImportOperationDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public ImportOperationDto getOperation(Long id, UserContext userContext) {
+        ImportOperation operation = importOperationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Операция импорта не найдена"));
+
+        if (!userContext.admin() && !operation.getUsername().equals(userContext.username())) {
+            throw new ResourceNotFoundException("Операция импорта не найдена");
+        }
+
+        return ImportOperationDto.fromEntity(operation);
+    }
+
+    private ImportOperation startOperation(MultipartFile file, String username) {
+        ImportOperation operation = new ImportOperation();
+        operation.setUsername(username == null || username.isBlank() ? "anonymous" : username.trim());
+        operation.setFilename(file != null ? file.getOriginalFilename() : null);
+        operation.setStartedAt(LocalDateTime.now());
+        operation.setStatus(ImportStatus.IN_PROGRESS);
+        return importOperationRepository.save(operation);
+    }
+
+    private List<OrganizationDto> parseFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Файл для импорта пуст");
+        }
+        try {
+            return objectMapper.readValue(file.getInputStream(), new TypeReference<>() {});
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Не удалось прочитать файл импорта: " + e.getMessage(), e);
+        }
+    }
+
+    private int executeTransactionalImport(List<OrganizationDto> records) {
+        if (records == null || records.isEmpty()) {
+            throw new IllegalArgumentException("Файл не содержит записей для импорта");
+        }
+        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+        definition.setName("importOrganizations");
+        definition.setIsolationLevel(DefaultTransactionDefinition.ISOLATION_SERIALIZABLE);
+        TransactionStatus status = transactionManager.getTransaction(definition);
+
+        try {
+            int index = 1;
+            for (OrganizationDto dto : records) {
+                try {
+                    organizationService.create(dto);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + extractMessage(ex), ex);
+                }
+                index++;
+            }
+            transactionManager.commit(status);
+            return records.size();
+        } catch (RuntimeException ex) {
+            transactionManager.rollback(status);
+            throw ex;
+        }
+    }
+
+    private String extractMessage(Exception ex) {
+        String message = ex.getMessage();
+        if (message != null && !message.isBlank()) {
+            return message;
+        }
+        Throwable cause = ex.getCause();
+        return cause != null && cause.getMessage() != null ? cause.getMessage() : "Неизвестная ошибка";
+    }
+}

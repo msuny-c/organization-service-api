@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Import Demo 1",
+    "coordinates": { "x": 701, "y": 801 },
+    "employeesCount": 15,
+    "annualTurnover": 1500000,
+    "rating": 4,
+    "fullName": "Import Demo 1 LLC",
+    "type": "COMMERCIAL",
+    "postalAddress": {
+      "zipCode": "7000001",
+      "town": { "x": 10, "y": 20, "z": 3.3, "name": "Import Town 1" }
+    },
+    "officialAddress": {
+      "zipCode": "7000002",
+      "town": { "x": 11, "y": 21, "z": 4.4, "name": "Import Town 2" }
+    }
+  },
+  {
+    "name": "Import Demo 2",
+    "coordinates": { "x": 702, "y": 802 },
+    "employeesCount": 22,
+    "annualTurnover": 2150000,
+    "rating": 5,
+    "fullName": "Import Demo 2 LLC",
+    "type": "TRUST",
+    "postalAddress": {
+      "zipCode": "7000003",
+      "town": { "x": 12, "y": 22, "z": 5.5, "name": "Import Town 3" }
+    }
+  }
+]

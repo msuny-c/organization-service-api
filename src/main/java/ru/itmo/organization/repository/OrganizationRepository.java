@@ -381,4 +381,47 @@ public class OrganizationRepository {
             }
         }
     }
+
+    public boolean existsByFullName(String fullName, Long excludeId) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            return false;
+        }
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(o.id) FROM Organization o WHERE LOWER(o.fullName) = LOWER(:fullName) "
+                                + "AND (:excludeId IS NULL OR o.id <> :excludeId)",
+                        Long.class)
+                .setParameter("fullName", fullName.trim())
+                .setParameter("excludeId", excludeId)
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
+    public boolean existsByCoordinates(Long x, Long y, Long excludeId) {
+        if (x == null || y == null) {
+            return false;
+        }
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(o.id) FROM Organization o WHERE o.coordinates.x = :x AND o.coordinates.y = :y "
+                                + "AND (:excludeId IS NULL OR o.id <> :excludeId)",
+                        Long.class)
+                .setParameter("x", x)
+                .setParameter("y", y)
+                .setParameter("excludeId", excludeId)
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
+    public boolean existsByPostalZip(String zipCode, Long excludeId) {
+        if (zipCode == null || zipCode.trim().isEmpty()) {
+            return false;
+        }
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(o.id) FROM Organization o WHERE o.postalAddress.zipCode = :zip "
+                                + "AND (:excludeId IS NULL OR o.id <> :excludeId)",
+                        Long.class)
+                .setParameter("zip", zipCode.trim())
+                .setParameter("excludeId", excludeId)
+                .getSingleResult();
+        return count != null && count > 0;
+    }
 }

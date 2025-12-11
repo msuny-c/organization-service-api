@@ -3,23 +3,27 @@ package ru.itmo.organization.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import jakarta.validation.Valid;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import ru.itmo.organization.dto.OrganizationDto;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.mapper.OrganizationMapper;
 import ru.itmo.organization.model.*;
 import ru.itmo.organization.repository.*;
+import ru.itmo.organization.validation.UniqueOrganization;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Validated
 public class OrganizationService {
     
     private final OrganizationRepository organizationRepository;
@@ -51,7 +55,8 @@ public class OrganizationService {
         return mapper.toDto(organization);
     }
     
-    public OrganizationDto create(OrganizationDto dto) {
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public OrganizationDto create(@Valid @UniqueOrganization OrganizationDto dto) {
         Organization organization = mapper.toEntity(dto);
         organization.setCreationDate(LocalDate.now());
         
@@ -73,7 +78,8 @@ public class OrganizationService {
         return mapper.toDto(saved);
     }
     
-    public OrganizationDto update(Long id, OrganizationDto dto) {
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public OrganizationDto update(Long id, @Valid @UniqueOrganization OrganizationDto dto) {
         Organization existing = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));
         
@@ -107,6 +113,7 @@ public class OrganizationService {
         return mapper.toDto(updated);
     }
     
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public void delete(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));
@@ -145,6 +152,7 @@ public class OrganizationService {
         return organizationRepository.countByType(type);
     }
     
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrganizationDto dismissAllEmployees(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));
@@ -154,6 +162,7 @@ public class OrganizationService {
         return mapper.toDto(updated);
     }
     
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrganizationDto absorb(Long absorbingId, Long absorbedId) {
         if (absorbingId.equals(absorbedId)) {
             throw new IllegalArgumentException("Организация не может поглотить саму себя");

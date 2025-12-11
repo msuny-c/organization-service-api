@@ -57,6 +57,7 @@ public class RestOrganizationController {
     public ResponseEntity<OrganizationDto> updateOrganization(
             @PathVariable Long id,
             @Valid @RequestBody OrganizationDto organization) {
+        organization.setId(id);
         OrganizationDto updated = organizationService.update(id, organization);
         return ResponseEntity.ok(updated);
     }
