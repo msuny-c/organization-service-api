@@ -24,9 +24,10 @@ public class RestImportController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImportOperationDto> importOrganizations(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(name = "objectType", defaultValue = "ORGANIZATION") ru.itmo.organization.model.ImportObjectType objectType,
             Authentication authentication) {
 
-        ImportOperationDto dto = importService.importOrganizations(file, authentication);
+        ImportOperationDto dto = importService.importOrganizations(file, objectType, authentication);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(dto);
     }
 
@@ -44,28 +45,9 @@ public class RestImportController {
     }
 
     @GetMapping("/template")
-    public ResponseEntity<ByteArrayResource> downloadTemplate() {
-        String template = """
-                [
-                  {
-                    "name": "Demo Org",
-                    "coordinates": { "x": 100, "y": 200 },
-                    "employeesCount": 50,
-                    "annualTurnover": 500000,
-                    "rating": 4,
-                    "fullName": "Demo Org LLC",
-                    "type": "COMMERCIAL",
-                    "postalAddress": {
-                      "zipCode": "1900001",
-                      "town": { "x": 1, "y": 2, "z": 3.5, "name": "Sample Town" }
-                    },
-                    "officialAddress": {
-                      "zipCode": "1900002",
-                      "town": { "x": 4, "y": 5, "z": 6.5, "name": "Another Town" }
-                    }
-                  }
-                ]
-                """;
+    public ResponseEntity<ByteArrayResource> downloadTemplate(
+            @RequestParam(name = "objectType", defaultValue = "ORGANIZATION") ru.itmo.organization.model.ImportObjectType objectType) {
+        String template = buildTemplate(objectType);
         ByteArrayResource resource = new ByteArrayResource(template.getBytes(StandardCharsets.UTF_8));
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"import-template.json\"")
@@ -73,4 +55,53 @@ public class RestImportController {
                 .body(resource);
     }
 
+    private String buildTemplate(ru.itmo.organization.model.ImportObjectType type) {
+        return switch (type == null ? ru.itmo.organization.model.ImportObjectType.ORGANIZATION : type) {
+            case ORGANIZATION -> """
+                    [
+                      {
+                        "name": "Demo Org",
+                        "coordinates": { "x": 100, "y": 200 },
+                        "employeesCount": 50,
+                        "annualTurnover": 500000,
+                        "rating": 4,
+                        "fullName": "Demo Org LLC",
+                        "type": "COMMERCIAL",
+                        "postalAddress": {
+                          "zipCode": "1900001",
+                          "town": { "x": 1, "y": 2, "z": 3.5, "name": "Sample Town" }
+                        },
+                        "officialAddress": {
+                          "zipCode": "1900002",
+                          "town": { "x": 4, "y": 5, "z": 6.5, "name": "Another Town" }
+                        }
+                      }
+                    ]
+                    """;
+            case COORDINATES -> """
+                    [
+                      { "x": 10, "y": 20 },
+                      { "x": 30, "y": 40 }
+                    ]
+                    """;
+            case LOCATION -> """
+                    [
+                      { "x": 1, "y": 2, "z": 3.3, "name": "Location A" },
+                      { "x": 5, "y": 6, "z": 7.7, "name": "Location B" }
+                    ]
+                    """;
+            case ADDRESS -> """
+                    [
+                      {
+                        "zipCode": "1970001",
+                        "town": { "x": 1, "y": 1, "z": 1.1, "name": "Town A" }
+                      },
+                      {
+                        "zipCode": "1970002",
+                        "townId": 1
+                      }
+                    ]
+                    """;
+        };
+    }
 }

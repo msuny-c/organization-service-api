@@ -9,14 +9,17 @@ import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
+import ru.itmo.organization.dto.AddressDto;
+import ru.itmo.organization.dto.CoordinatesDto;
 import ru.itmo.organization.dto.ImportOperationDto;
+import ru.itmo.organization.dto.LocationDto;
 import ru.itmo.organization.dto.OrganizationDto;
 import ru.itmo.organization.exception.ResourceNotFoundException;
+import ru.itmo.organization.model.ImportObjectType;
 import ru.itmo.organization.model.ImportOperation;
 import ru.itmo.organization.model.ImportStatus;
 import ru.itmo.organization.repository.ImportOperationRepository;
@@ -27,24 +30,30 @@ public class ImportService {
 
     private final ImportOperationRepository importOperationRepository;
     private final OrganizationService organizationService;
+    private final CoordinatesService coordinatesService;
+    private final LocationService locationService;
+    private final AddressService addressService;
     private final WebSocketService webSocketService;
     private final ObjectMapper objectMapper;
-    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
-    public ImportOperationDto importOrganizations(MultipartFile file, Authentication authentication) {
+    @Transactional(noRollbackFor = Exception.class)
+    public ImportOperationDto importOrganizations(
+            MultipartFile file,
+            ImportObjectType objectType,
+            Authentication authentication) {
         UserContext userContext = toUserContext(authentication);
-        ImportOperation operation = startOperation(file, userContext.username());
+        ImportOperation operation = startOperation(file, userContext.username(), objectType);
         try {
-            List<OrganizationDto> records = parseFile(file);
-            List<OrganizationDto> created = executeTransactionalImport(records);
+            List<?> records = parseFile(file, objectType);
+            List<?> created = executeTransactionalImport(records, objectType);
             operation.markSuccess(created.size());
             importOperationRepository.save(operation);
-            if (!created.isEmpty()) {
-                webSocketService.broadcastOrganizationsUpdate();
-            }
+            broadcastByType(objectType, !created.isEmpty());
             webSocketService.broadcastImportsUpdate();
-            return ImportOperationDto.fromEntity(operation, created);
+            return ImportOperationDto.fromEntity(operation, created.stream()
+                    .filter(OrganizationDto.class::isInstance)
+                    .map(OrganizationDto.class::cast)
+                    .toList());
         } catch (Exception ex) {
             operation.markFailed(extractMessage(ex));
             importOperationRepository.save(operation);
@@ -78,52 +87,49 @@ public class ImportService {
         return ImportOperationDto.fromEntity(operation);
     }
 
-    private ImportOperation startOperation(MultipartFile file, String username) {
+    private ImportOperation startOperation(MultipartFile file, String username, ImportObjectType type) {
         ImportOperation operation = new ImportOperation();
         operation.setUsername(username == null || username.isBlank() ? "anonymous" : username.trim());
         operation.setStartedAt(LocalDateTime.now());
         operation.setStatus(ImportStatus.IN_PROGRESS);
+        operation.setObjectType(type == null ? ImportObjectType.ORGANIZATION : type);
         return importOperationRepository.save(operation);
     }
 
-    private List<OrganizationDto> parseFile(MultipartFile file) {
+    private List<?> parseFile(MultipartFile file, ImportObjectType type) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Файл для импорта пуст");
         }
         try {
-            return objectMapper.readValue(file.getInputStream(), new TypeReference<>() {});
+            ImportObjectType targetType = type == null ? ImportObjectType.ORGANIZATION : type;
+            return switch (targetType) {
+                case ORGANIZATION -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<OrganizationDto>>() {});
+                case COORDINATES -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<CoordinatesDto>>() {});
+                case LOCATION -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<LocationDto>>() {});
+                case ADDRESS -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<AddressDto>>() {});
+            };
         } catch (IOException e) {
             throw new IllegalArgumentException("Не удалось прочитать файл импорта: " + e.getMessage(), e);
         }
     }
 
-    private List<OrganizationDto> executeTransactionalImport(List<OrganizationDto> records) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
+    private List<?> executeTransactionalImport(List<?> records, ImportObjectType type) {
         if (records == null || records.isEmpty()) {
             throw new IllegalArgumentException("Файл не содержит записей для импорта");
         }
-        DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
-        definition.setName("importOrganizations");
-        definition.setIsolationLevel(DefaultTransactionDefinition.ISOLATION_SERIALIZABLE);
-        TransactionStatus status = transactionManager.getTransaction(definition);
 
-        try {
-            List<OrganizationDto> created = new java.util.ArrayList<>();
-            int index = 1;
-            for (OrganizationDto dto : records) {
-                try {
-                    OrganizationDto saved = organizationService.create(dto);
-                    created.add(saved);
-                } catch (Exception ex) {
-                    throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + conciseMessage(ex), ex);
-                }
-                index++;
+        List<Object> created = new java.util.ArrayList<>();
+        int index = 1;
+        for (Object dto : records) {
+            try {
+                created.add(handleSingleImport(dto, type));
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + conciseMessage(ex), ex);
             }
-            transactionManager.commit(status);
-            return created;
-        } catch (RuntimeException ex) {
-            transactionManager.rollback(status);
-            throw ex;
+            index++;
         }
+        return created;
     }
 
     private String extractMessage(Exception ex) {
@@ -161,5 +167,48 @@ public class ImportService {
         boolean admin = authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()));
         return new UserContext(authentication.getName(), admin);
+    }
+
+    private Object handleSingleImport(Object dto, ImportObjectType type) {
+        ImportObjectType resolvedType = type == null ? ImportObjectType.ORGANIZATION : type;
+        return switch (resolvedType) {
+            case ORGANIZATION -> organizationService.create((OrganizationDto) dto);
+            case COORDINATES -> coordinatesService.create((CoordinatesDto) dto);
+            case LOCATION -> locationService.create((LocationDto) dto);
+            case ADDRESS -> importAddress((AddressDto) dto);
+        };
+    }
+
+    private AddressDto importAddress(AddressDto dto) {
+        AddressDto payload = dto;
+        if (dto.getTownId() == null && dto.getTown() == null) {
+            throw new IllegalArgumentException("Не указан город для адреса");
+        }
+        if (dto.getTownId() == null && dto.getTown() != null) {
+            LocationDto locationDto = dto.getTown();
+            LocationDto savedTown = locationService.create(locationDto);
+            payload = new AddressDto(
+                    dto.getId(),
+                    dto.getZipCode(),
+                    savedTown.getId(),
+                    null,
+                    dto.getIsUpdated()
+            );
+        }
+        AddressDto saved = addressService.create(payload);
+        return saved;
+    }
+
+    private void broadcastByType(ImportObjectType type, boolean hasCreated) {
+        if (!hasCreated) {
+            return;
+        }
+        ImportObjectType resolvedType = type == null ? ImportObjectType.ORGANIZATION : type;
+        switch (resolvedType) {
+            case ORGANIZATION -> webSocketService.broadcastOrganizationsUpdate();
+            case COORDINATES -> webSocketService.broadcastCoordinatesUpdate();
+            case LOCATION -> webSocketService.broadcastLocationsUpdate();
+            case ADDRESS -> webSocketService.broadcastAddressesUpdate();
+        }
     }
 }

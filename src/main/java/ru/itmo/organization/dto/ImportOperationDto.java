@@ -14,6 +14,7 @@ public class ImportOperationDto {
 
     private Long id;
     private ImportStatus status;
+    private ru.itmo.organization.model.ImportObjectType objectType;
     private String username;
     private java.time.LocalDateTime startedAt;
     private Integer addedCount;
@@ -23,6 +24,7 @@ public class ImportOperationDto {
         ImportOperationDto dto = new ImportOperationDto();
         dto.setId(operation.getId());
         dto.setStatus(operation.getStatus());
+        dto.setObjectType(operation.getObjectType());
         dto.setUsername(operation.getUsername());
         dto.setStartedAt(operation.getStartedAt());
         dto.setAddedCount(operation.getAddedCount());

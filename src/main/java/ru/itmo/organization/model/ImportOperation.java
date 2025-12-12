@@ -27,6 +27,10 @@ public class ImportOperation {
     @Column(nullable = false)
     private ImportStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "object_type", nullable = false)
+    private ImportObjectType objectType;
+
     @Column(name = "added_count")
     private Integer addedCount;
 
