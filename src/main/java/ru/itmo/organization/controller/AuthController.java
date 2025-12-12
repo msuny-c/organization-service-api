@@ -3,6 +3,7 @@ package ru.itmo.organization.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import ru.itmo.organization.dto.AuthRequest;
 import ru.itmo.organization.dto.AuthResponse;
