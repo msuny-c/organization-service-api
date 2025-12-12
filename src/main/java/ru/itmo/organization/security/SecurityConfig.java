@@ -43,6 +43,13 @@ public class SecurityConfig {
                                 "/api/locations/**",
                                 "/api/operations/**"
                         ).permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/favicon.ico",
+                                "/assets/**",
+                                "/static/**"
+                        ).permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )
