@@ -24,4 +24,14 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
+
+    @PostMapping("/assume-admin")
+    public ResponseEntity<AuthResponse> assumeAdmin(Authentication authentication) {
+        return ResponseEntity.ok(authService.assumeRole(authentication, ru.itmo.organization.model.UserRole.ADMIN));
+    }
+
+    @PostMapping("/assume-user")
+    public ResponseEntity<AuthResponse> assumeUser(Authentication authentication) {
+        return ResponseEntity.ok(authService.assumeRole(authentication, ru.itmo.organization.model.UserRole.USER));
+    }
 }

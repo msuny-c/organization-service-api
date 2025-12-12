@@ -6,6 +6,7 @@ import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.itmo.organization.dto.AuthRequest;
@@ -49,6 +50,18 @@ public class AuthService {
             throw new BadCredentialsException("Неверные учетные данные");
         }
 
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, user.getUsername(), user.getRole());
+    }
+
+    public AuthResponse assumeRole(Authentication authentication, UserRole role) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new BadCredentialsException("Необходимо войти в систему");
+        }
+        UserAccount user = userAccountRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new BadCredentialsException("Неверные учетные данные"));
+        user.setRole(role);
+        userAccountRepository.save(user);
         String token = jwtService.generateToken(user);
         return new AuthResponse(token, user.getUsername(), user.getRole());
     }

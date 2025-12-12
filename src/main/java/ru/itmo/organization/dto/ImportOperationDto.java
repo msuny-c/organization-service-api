@@ -1,6 +1,7 @@
 package ru.itmo.organization.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,6 +21,7 @@ public class ImportOperationDto {
     private Integer addedCount;
     private String filename;
     private String errorMessage;
+    private List<OrganizationDto> createdOrganizations;
 
     public static ImportOperationDto fromEntity(ImportOperation operation) {
         ImportOperationDto dto = new ImportOperationDto();
@@ -31,6 +33,12 @@ public class ImportOperationDto {
         dto.setAddedCount(operation.getAddedCount());
         dto.setFilename(operation.getFilename());
         dto.setErrorMessage(operation.getErrorMessage());
+        return dto;
+    }
+
+    public static ImportOperationDto fromEntity(ImportOperation operation, List<OrganizationDto> created) {
+        ImportOperationDto dto = fromEntity(operation);
+        dto.setCreatedOrganizations(created);
         return dto;
     }
 }

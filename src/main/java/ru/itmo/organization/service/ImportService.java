@@ -37,14 +37,14 @@ public class ImportService {
         ImportOperation operation = startOperation(file, userContext.username());
         try {
             List<OrganizationDto> records = parseFile(file);
-            int added = executeTransactionalImport(records);
-            operation.markSuccess(added);
+            List<OrganizationDto> created = executeTransactionalImport(records);
+            operation.markSuccess(created.size());
             importOperationRepository.save(operation);
-            if (added > 0) {
+            if (!created.isEmpty()) {
                 webSocketService.broadcastOrganizationsUpdate();
             }
             webSocketService.broadcastImportsUpdate();
-            return ImportOperationDto.fromEntity(operation);
+            return ImportOperationDto.fromEntity(operation, created);
         } catch (Exception ex) {
             operation.markFailed(extractMessage(ex));
             importOperationRepository.save(operation);
@@ -98,7 +98,7 @@ public class ImportService {
         }
     }
 
-    private int executeTransactionalImport(List<OrganizationDto> records) {
+    private List<OrganizationDto> executeTransactionalImport(List<OrganizationDto> records) {
         if (records == null || records.isEmpty()) {
             throw new IllegalArgumentException("Файл не содержит записей для импорта");
         }
@@ -108,17 +108,19 @@ public class ImportService {
         TransactionStatus status = transactionManager.getTransaction(definition);
 
         try {
+            List<OrganizationDto> created = new java.util.ArrayList<>();
             int index = 1;
             for (OrganizationDto dto : records) {
                 try {
-                    organizationService.create(dto);
+                    OrganizationDto saved = organizationService.create(dto);
+                    created.add(saved);
                 } catch (Exception ex) {
                     throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + conciseMessage(ex), ex);
                 }
                 index++;
             }
             transactionManager.commit(status);
-            return records.size();
+            return created;
         } catch (RuntimeException ex) {
             transactionManager.rollback(status);
             throw ex;
@@ -136,10 +138,21 @@ public class ImportService {
 
     private String conciseMessage(Exception ex) {
         String msg = extractMessage(ex);
-        if (msg.startsWith("create.dto")) {
-            return msg.replace("create.dto.", "").replace(":", "");
-        }
-        return msg;
+        msg = msg.replace("create.dto.", "");
+
+        String cleaned = msg
+                .replace("fullName:", "")
+                .replace("coordinates:", "")
+                .replace("postalAddress.zipCode:", "")
+                .replace("postalAddress:", "")
+                .replace(":", "");
+
+        String[] parts = cleaned.split(",");
+        return java.util.Arrays.stream(parts)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse(cleaned);
     }
 
     private UserContext toUserContext(Authentication authentication) {
