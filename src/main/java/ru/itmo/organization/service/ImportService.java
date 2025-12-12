@@ -113,7 +113,7 @@ public class ImportService {
                 try {
                     organizationService.create(dto);
                 } catch (Exception ex) {
-                    throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + extractMessage(ex), ex);
+                    throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + conciseMessage(ex), ex);
                 }
                 index++;
             }
@@ -132,6 +132,14 @@ public class ImportService {
         }
         Throwable cause = ex.getCause();
         return cause != null && cause.getMessage() != null ? cause.getMessage() : "Неизвестная ошибка";
+    }
+
+    private String conciseMessage(Exception ex) {
+        String msg = extractMessage(ex);
+        if (msg.startsWith("create.dto")) {
+            return msg.replace("create.dto.", "").replace(":", "");
+        }
+        return msg;
     }
 
     private UserContext toUserContext(Authentication authentication) {
