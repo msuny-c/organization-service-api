@@ -9,14 +9,9 @@ import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import ru.itmo.organization.dto.AddressDto;
-import ru.itmo.organization.dto.CoordinatesDto;
 import ru.itmo.organization.dto.ImportOperationDto;
-import ru.itmo.organization.dto.LocationDto;
 import ru.itmo.organization.dto.OrganizationDto;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.model.ImportObjectType;
@@ -29,10 +24,7 @@ import ru.itmo.organization.repository.ImportOperationRepository;
 public class ImportService {
 
     private final ImportOperationRepository importOperationRepository;
-    private final OrganizationService organizationService;
-    private final CoordinatesService coordinatesService;
-    private final LocationService locationService;
-    private final AddressService addressService;
+    private final ImportExecutorService importExecutorService;
     private final WebSocketService webSocketService;
     private final ObjectMapper objectMapper;
 
@@ -42,10 +34,10 @@ public class ImportService {
             ImportObjectType objectType,
             Authentication authentication) {
         UserContext userContext = toUserContext(authentication);
-        ImportOperation operation = startOperation(file, userContext.username(), objectType);
+            ImportOperation operation = startOperation(file, userContext.username(), objectType);
         try {
             List<?> records = parseFile(file, objectType);
-            List<?> created = executeTransactionalImport(records, objectType);
+            List<?> created = importExecutorService.executeImport(records, objectType);
             operation.markSuccess(created.size());
             importOperationRepository.save(operation);
             broadcastByType(objectType, !created.isEmpty());
@@ -113,25 +105,6 @@ public class ImportService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
-    private List<?> executeTransactionalImport(List<?> records, ImportObjectType type) {
-        if (records == null || records.isEmpty()) {
-            throw new IllegalArgumentException("Файл не содержит записей для импорта");
-        }
-
-        List<Object> created = new java.util.ArrayList<>();
-        int index = 1;
-        for (Object dto : records) {
-            try {
-                created.add(handleSingleImport(dto, type));
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("Ошибка в записи #" + index + ": " + conciseMessage(ex), ex);
-            }
-            index++;
-        }
-        return created;
-    }
-
     private String extractMessage(Exception ex) {
         String message = ex.getMessage();
         if (message != null && !message.isBlank()) {
@@ -141,25 +114,6 @@ public class ImportService {
         return cause != null && cause.getMessage() != null ? cause.getMessage() : "Неизвестная ошибка";
     }
 
-    private String conciseMessage(Exception ex) {
-        String msg = extractMessage(ex);
-        msg = msg.replace("create.dto.", "");
-
-        String cleaned = msg
-                .replace("fullName:", "")
-                .replace("coordinates:", "")
-                .replace("postalAddress.zipCode:", "")
-                .replace("postalAddress:", "")
-                .replace(":", "");
-
-        String[] parts = cleaned.split(",");
-        return java.util.Arrays.stream(parts)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .reduce((a, b) -> a + "; " + b)
-                .orElse(cleaned);
-    }
-
     private UserContext toUserContext(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             return new UserContext("anonymous", false);
@@ -167,36 +121,6 @@ public class ImportService {
         boolean admin = authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()));
         return new UserContext(authentication.getName(), admin);
-    }
-
-    private Object handleSingleImport(Object dto, ImportObjectType type) {
-        ImportObjectType resolvedType = type == null ? ImportObjectType.ORGANIZATION : type;
-        return switch (resolvedType) {
-            case ORGANIZATION -> organizationService.create((OrganizationDto) dto);
-            case COORDINATES -> coordinatesService.create((CoordinatesDto) dto);
-            case LOCATION -> locationService.create((LocationDto) dto);
-            case ADDRESS -> importAddress((AddressDto) dto);
-        };
-    }
-
-    private AddressDto importAddress(AddressDto dto) {
-        AddressDto payload = dto;
-        if (dto.getTownId() == null && dto.getTown() == null) {
-            throw new IllegalArgumentException("Не указан город для адреса");
-        }
-        if (dto.getTownId() == null && dto.getTown() != null) {
-            LocationDto locationDto = dto.getTown();
-            LocationDto savedTown = locationService.create(locationDto);
-            payload = new AddressDto(
-                    dto.getId(),
-                    dto.getZipCode(),
-                    savedTown.getId(),
-                    null,
-                    dto.getIsUpdated()
-            );
-        }
-        AddressDto saved = addressService.create(payload);
-        return saved;
     }
 
     private void broadcastByType(ImportObjectType type, boolean hasCreated) {
