@@ -81,7 +81,6 @@ public class ImportService {
     private ImportOperation startOperation(MultipartFile file, String username) {
         ImportOperation operation = new ImportOperation();
         operation.setUsername(username == null || username.isBlank() ? "anonymous" : username.trim());
-        operation.setFilename(file != null ? file.getOriginalFilename() : null);
         operation.setStartedAt(LocalDateTime.now());
         operation.setStatus(ImportStatus.IN_PROGRESS);
         return importOperationRepository.save(operation);

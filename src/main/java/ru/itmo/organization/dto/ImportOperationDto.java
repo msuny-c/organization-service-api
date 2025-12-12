@@ -1,6 +1,5 @@
 package ru.itmo.organization.dto;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,11 +15,8 @@ public class ImportOperationDto {
     private Long id;
     private ImportStatus status;
     private String username;
-    private LocalDateTime startedAt;
-    private LocalDateTime finishedAt;
+    private java.time.LocalDateTime startedAt;
     private Integer addedCount;
-    private String filename;
-    private String errorMessage;
     private List<OrganizationDto> createdOrganizations;
 
     public static ImportOperationDto fromEntity(ImportOperation operation) {
@@ -29,10 +25,7 @@ public class ImportOperationDto {
         dto.setStatus(operation.getStatus());
         dto.setUsername(operation.getUsername());
         dto.setStartedAt(operation.getStartedAt());
-        dto.setFinishedAt(operation.getFinishedAt());
         dto.setAddedCount(operation.getAddedCount());
-        dto.setFilename(operation.getFilename());
-        dto.setErrorMessage(operation.getErrorMessage());
         return dto;
     }
 

@@ -23,9 +23,6 @@ public class ImportOperation {
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
 
-    @Column(name = "finished_at")
-    private LocalDateTime finishedAt;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ImportStatus status;
@@ -33,23 +30,13 @@ public class ImportOperation {
     @Column(name = "added_count")
     private Integer addedCount;
 
-    @Column(name = "filename")
-    private String filename;
-
-    @Column(name = "error_message", length = 1000)
-    private String errorMessage;
-
     public void markSuccess(int added) {
         this.status = ImportStatus.SUCCESS;
         this.addedCount = added;
-        this.finishedAt = LocalDateTime.now();
-        this.errorMessage = null;
     }
 
     public void markFailed(String message) {
         this.status = ImportStatus.FAILED;
-        this.finishedAt = LocalDateTime.now();
-        this.errorMessage = message;
         this.addedCount = null;
     }
 }
