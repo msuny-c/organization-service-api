@@ -18,7 +18,7 @@ public class JwtService {
     private final long expirationMs;
 
     public JwtService(
-            @Value("${jwt.secret:ZGV2LXNlY3JldC1rZXktcGxlYXNlLWNoYW5nZQ==}") String secret,
+            @Value("${jwt.secret:bXktc3VwZXItc2VjdXJlLWFwcC1qd3Qtc2VjcmV0LXN1cGVyLWxvbmc=}") String secret,
             @Value("${jwt.expiration-ms:86400000}") long expirationMs) {
         byte[] keyBytes;
         try {
