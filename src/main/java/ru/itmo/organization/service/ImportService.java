@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -29,7 +30,8 @@ public class ImportService {
     private final ObjectMapper objectMapper;
     private final PlatformTransactionManager transactionManager;
 
-    public ImportOperationDto importOrganizations(MultipartFile file, UserContext userContext) {
+    public ImportOperationDto importOrganizations(MultipartFile file, Authentication authentication) {
+        UserContext userContext = toUserContext(authentication);
         ImportOperation operation = startOperation(file, userContext.username());
         try {
             List<OrganizationDto> records = parseFile(file);
@@ -39,10 +41,12 @@ public class ImportService {
             if (added > 0) {
                 webSocketService.broadcastOrganizationsUpdate();
             }
+            webSocketService.broadcastImportsUpdate();
             return ImportOperationDto.fromEntity(operation);
         } catch (Exception ex) {
             operation.markFailed(extractMessage(ex));
             importOperationRepository.save(operation);
+            webSocketService.broadcastImportsUpdate();
             if (ex instanceof IllegalArgumentException) {
                 throw ex;
             }
@@ -50,7 +54,8 @@ public class ImportService {
         }
     }
 
-    public List<ImportOperationDto> listOperations(UserContext userContext) {
+    public List<ImportOperationDto> listOperations(Authentication authentication) {
+        UserContext userContext = toUserContext(authentication);
         List<ImportOperation> operations = userContext.admin()
                 ? importOperationRepository.findAll()
                 : importOperationRepository.findAllForUser(userContext.username());
@@ -59,7 +64,8 @@ public class ImportService {
                 .collect(Collectors.toList());
     }
 
-    public ImportOperationDto getOperation(Long id, UserContext userContext) {
+    public ImportOperationDto getOperation(Long id, Authentication authentication) {
+        UserContext userContext = toUserContext(authentication);
         ImportOperation operation = importOperationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Операция импорта не найдена"));
 
@@ -124,5 +130,14 @@ public class ImportService {
         }
         Throwable cause = ex.getCause();
         return cause != null && cause.getMessage() != null ? cause.getMessage() : "Неизвестная ошибка";
+    }
+
+    private UserContext toUserContext(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return new UserContext("anonymous", false);
+        }
+        boolean admin = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority()));
+        return new UserContext(authentication.getName(), admin);
     }
 }

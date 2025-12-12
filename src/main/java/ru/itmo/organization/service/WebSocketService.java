@@ -27,4 +27,8 @@ public class WebSocketService {
     public void broadcastLocationsUpdate() {
         messagingTemplate.convertAndSend("/topic/locations", "update");
     }
+
+    public void broadcastImportsUpdate() {
+        messagingTemplate.convertAndSend("/topic/imports", "update");
+    }
 }

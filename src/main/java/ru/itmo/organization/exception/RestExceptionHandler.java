@@ -11,6 +11,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
@@ -27,6 +29,18 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleBadRequest(Exception ex) {
         return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, String> handleBadCredentials(BadCredentialsException ex) {
+        return Map.of("error", "Неверные учетные данные");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleForbidden(AccessDeniedException ex) {
+        return Map.of("error", "Доступ запрещен");
     }
     
     @ExceptionHandler(MethodArgumentNotValidException.class)

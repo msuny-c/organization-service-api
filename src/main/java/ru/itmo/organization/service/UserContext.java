@@ -1,12 +1,7 @@
 package ru.itmo.organization.service;
 
 public record UserContext(String username, boolean admin) {
-
-    public static UserContext regular(String username) {
-        return new UserContext(username, false);
-    }
-
-    public static UserContext admin(String username) {
-        return new UserContext(username, true);
+    public static UserContext of(String username, boolean admin) {
+        return new UserContext(username, admin);
     }
 }
