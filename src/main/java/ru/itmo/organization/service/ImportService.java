@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
@@ -30,6 +31,7 @@ public class ImportService {
     private final ObjectMapper objectMapper;
     private final PlatformTransactionManager transactionManager;
 
+    @Transactional
     public ImportOperationDto importOrganizations(MultipartFile file, Authentication authentication) {
         UserContext userContext = toUserContext(authentication);
         ImportOperation operation = startOperation(file, userContext.username());
