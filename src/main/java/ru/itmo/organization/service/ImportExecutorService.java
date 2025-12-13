@@ -71,6 +71,17 @@ public class ImportExecutorService {
         if (message == null || message.isBlank()) {
             return "Неизвестная ошибка";
         }
-        return message.trim();
+        String cleaned = message
+                .replace("create.dto.", "")
+                .replace("dto.", "");
+
+        int colonIndex = cleaned.indexOf(':');
+        if (colonIndex >= 0 && colonIndex + 1 < cleaned.length()) {
+            String tail = cleaned.substring(colonIndex + 1).trim();
+            if (!tail.isEmpty()) {
+                return tail;
+            }
+        }
+        return cleaned.trim();
     }
 }
