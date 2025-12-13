@@ -28,6 +28,13 @@ public class RestExceptionHandler {
     @ExceptionHandler({IllegalArgumentException.class, ConstraintViolationException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleBadRequest(Exception ex) {
+        if (ex instanceof ConstraintViolationException cve) {
+            String message = cve.getConstraintViolations().stream()
+                    .findFirst()
+                    .map(violation -> violation.getMessage())
+                    .orElse("Некорректные данные");
+            return Map.of("error", message);
+        }
         return Map.of("error", ex.getMessage());
     }
 
