@@ -1,0 +1,61 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1765631645410,666,Register user (get token),200,,CRUD + Import 1-2,text,true,,666,285,5,5,http://localhost:8000/api/auth/register,661,0,1
+1765631645240,836,Register user (get token),200,,CRUD + Import 1-1,text,true,,666,285,5,5,http://localhost:8000/api/auth/register,831,0,8
+1765631645807,269,Register user (get token),200,,CRUD + Import 1-4,text,true,,666,285,5,5,http://localhost:8000/api/auth/register,264,0,0
+1765631645609,467,Register user (get token),200,,CRUD + Import 1-3,text,true,,666,285,5,5,http://localhost:8000/api/auth/register,462,0,1
+1765631646010,82,Register user (get token),200,,CRUD + Import 1-5,text,true,,666,285,5,5,http://localhost:8000/api/auth/register,81,0,0
+1765631646093,282,Update existing organization,404,,CRUD + Import 1-5,text,false,,494,654,5,5,http://localhost:8000/api/organizations/1,282,0,0
+1765631646091,284,Update existing organization,404,,CRUD + Import 1-3,text,false,,494,654,5,5,http://localhost:8000/api/organizations/1,284,0,0
+1765631646091,284,Update existing organization,404,,CRUD + Import 1-2,text,false,,494,654,5,5,http://localhost:8000/api/organizations/1,284,0,0
+1765631646091,285,Update existing organization,404,,CRUD + Import 1-4,text,false,,494,654,5,5,http://localhost:8000/api/organizations/1,284,0,0
+1765631646092,284,Update existing organization,404,,CRUD + Import 1-1,text,false,,494,654,5,5,http://localhost:8000/api/organizations/1,283,0,0
+1765631646376,12,Delete concurrent organization,404,,CRUD + Import 1-3,text,false,,494,385,5,5,http://localhost:8000/api/organizations/2,12,0,0
+1765631646376,13,Delete concurrent organization,404,,CRUD + Import 1-5,text,false,,494,385,5,5,http://localhost:8000/api/organizations/2,13,0,0
+1765631646377,13,Delete concurrent organization,404,,CRUD + Import 1-1,text,false,,494,385,5,5,http://localhost:8000/api/organizations/2,13,0,0
+1765631646376,15,Delete concurrent organization,404,,CRUD + Import 1-4,text,false,,494,385,5,5,http://localhost:8000/api/organizations/2,15,0,0
+1765631646376,15,Delete concurrent organization,404,,CRUD + Import 1-2,text,false,,494,385,5,5,http://localhost:8000/api/organizations/2,15,0,0
+1765631646390,32,Create unique organization per thread,400,,CRUD + Import 1-5,text,false,,673,671,5,5,http://localhost:8000/api/organizations,31,0,0
+1765631646391,47,Create unique organization per thread,201,,CRUD + Import 1-2,text,true,,926,671,5,5,http://localhost:8000/api/organizations,46,0,0
+1765631646391,48,Create unique organization per thread,201,,CRUD + Import 1-4,text,true,,926,671,5,5,http://localhost:8000/api/organizations,47,0,0
+1765631646388,51,Create unique organization per thread,201,,CRUD + Import 1-3,text,true,,926,671,5,5,http://localhost:8000/api/organizations,50,0,0
+1765631646423,16,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-5,text,false,,790,660,5,5,http://localhost:8000/api/organizations,15,0,1
+1765631646391,49,Create unique organization per thread,201,,CRUD + Import 1-1,text,true,,926,671,5,5,http://localhost:8000/api/organizations,48,0,0
+1765631646439,12,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-3,text,false,,790,660,5,5,http://localhost:8000/api/organizations,12,0,0
+1765631646440,15,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-1,text,false,,790,660,5,5,http://localhost:8000/api/organizations,14,0,0
+1765631646439,17,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-4,text,false,,790,660,5,5,http://localhost:8000/api/organizations,16,0,0
+1765631646438,20,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-2,text,false,,790,660,5,5,http://localhost:8000/api/organizations,20,0,0
+1765631646459,31,Import batch,400,,CRUD + Import 1-2,text,false,,823,1503,5,5,http://localhost:8000/api/imports?username=jmeter,30,0,1
+1765631646456,34,Import batch,400,,CRUD + Import 1-4,text,false,,823,1512,5,5,http://localhost:8000/api/imports?username=jmeter,34,0,1
+1765631646440,50,Import batch,400,,CRUD + Import 1-5,text,false,,823,1509,5,5,http://localhost:8000/api/imports?username=jmeter,49,0,4
+1765631646455,36,Import batch,400,,CRUD + Import 1-1,text,false,,823,1497,5,5,http://localhost:8000/api/imports?username=jmeter,35,0,2
+1765631646452,39,Import batch,400,,CRUD + Import 1-3,text,false,,823,1509,5,5,http://localhost:8000/api/imports?username=jmeter,37,0,1
+1765631791139,125,Register user (get token),200,,CRUD + Import 1-1,text,true,,666,285,1,1,http://localhost:8000/api/auth/register,123,0,8
+1765631791277,16,Update existing organization,404,,CRUD + Import 1-1,text,false,,494,654,1,1,http://localhost:8000/api/organizations/1,15,0,0
+1765631791293,8,Delete concurrent organization,404,,CRUD + Import 1-1,text,false,,494,385,1,1,http://localhost:8000/api/organizations/2,8,0,0
+1765631791301,19,Create unique organization per thread,201,,CRUD + Import 1-1,text,true,,926,671,2,2,http://localhost:8000/api/organizations,19,0,0
+1765631791320,13,Create duplicate fullName (uniqueness check),201,,CRUD + Import 1-1,text,true,,915,660,2,2,http://localhost:8000/api/organizations,13,0,0
+1765631791334,39,Import batch,202,,CRUD + Import 1-1,text,true,,1745,1512,2,2,http://localhost:8000/api/imports?username=jmeter,38,0,0
+1765631791307,78,Register user (get token),200,,CRUD + Import 1-2,text,true,,666,285,1,1,http://localhost:8000/api/auth/register,78,0,1
+1765631791386,7,Update existing organization,404,,CRUD + Import 1-2,text,false,,494,654,1,1,http://localhost:8000/api/organizations/1,7,0,0
+1765631791393,5,Delete concurrent organization,404,,CRUD + Import 1-2,text,false,,494,385,1,1,http://localhost:8000/api/organizations/2,5,0,0
+1765631791399,9,Create unique organization per thread,201,,CRUD + Import 1-2,text,true,,926,671,1,1,http://localhost:8000/api/organizations,9,0,0
+1765631791409,7,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-2,text,false,,790,660,1,1,http://localhost:8000/api/organizations,7,0,0
+1765631791417,13,Import batch,400,,CRUD + Import 1-2,text,false,,823,1488,1,1,http://localhost:8000/api/imports?username=jmeter,13,0,1
+1765631791511,80,Register user (get token),200,,CRUD + Import 1-3,text,true,,666,285,1,1,http://localhost:8000/api/auth/register,79,0,0
+1765631791591,12,Update existing organization,404,,CRUD + Import 1-3,text,false,,494,654,1,1,http://localhost:8000/api/organizations/1,12,0,0
+1765631791604,8,Delete concurrent organization,404,,CRUD + Import 1-3,text,false,,494,385,1,1,http://localhost:8000/api/organizations/2,8,0,0
+1765631791613,15,Create unique organization per thread,201,,CRUD + Import 1-3,text,true,,926,671,1,1,http://localhost:8000/api/organizations,15,0,0
+1765631791629,12,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-3,text,false,,790,660,1,1,http://localhost:8000/api/organizations,12,0,0
+1765631791642,16,Import batch,400,,CRUD + Import 1-3,text,false,,823,1515,1,1,http://localhost:8000/api/imports?username=jmeter,16,0,1
+1765631791707,91,Register user (get token),200,,CRUD + Import 1-4,text,true,,666,285,1,1,http://localhost:8000/api/auth/register,90,0,1
+1765631791798,12,Update existing organization,404,,CRUD + Import 1-4,text,false,,494,654,1,1,http://localhost:8000/api/organizations/1,12,0,0
+1765631791811,7,Delete concurrent organization,404,,CRUD + Import 1-4,text,false,,494,385,1,1,http://localhost:8000/api/organizations/2,7,0,0
+1765631791818,9,Create unique organization per thread,201,,CRUD + Import 1-4,text,true,,926,671,1,1,http://localhost:8000/api/organizations,9,0,0
+1765631791828,5,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-4,text,false,,790,660,1,1,http://localhost:8000/api/organizations,5,0,0
+1765631791834,10,Import batch,400,,CRUD + Import 1-4,text,false,,823,1494,1,1,http://localhost:8000/api/imports?username=jmeter,10,0,1
+1765631791905,74,Register user (get token),200,,CRUD + Import 1-5,text,true,,666,285,1,1,http://localhost:8000/api/auth/register,74,0,1
+1765631791980,7,Update existing organization,404,,CRUD + Import 1-5,text,false,,494,654,1,1,http://localhost:8000/api/organizations/1,7,0,0
+1765631791987,5,Delete concurrent organization,404,,CRUD + Import 1-5,text,false,,494,385,1,1,http://localhost:8000/api/organizations/2,5,0,0
+1765631791993,8,Create unique organization per thread,201,,CRUD + Import 1-5,text,true,,926,671,1,1,http://localhost:8000/api/organizations,8,0,0
+1765631792002,6,Create duplicate fullName (uniqueness check),400,,CRUD + Import 1-5,text,false,,790,660,1,1,http://localhost:8000/api/organizations,6,0,0
+1765631792009,11,Import batch,400,,CRUD + Import 1-5,text,false,,823,1515,1,1,http://localhost:8000/api/imports?username=jmeter,10,0,2

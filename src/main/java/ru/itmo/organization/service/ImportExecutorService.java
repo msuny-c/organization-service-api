@@ -8,9 +8,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import ru.itmo.organization.dto.AddressDto;
-import ru.itmo.organization.dto.CoordinatesDto;
 import ru.itmo.organization.dto.LocationDto;
-import ru.itmo.organization.dto.OrganizationDto;
+import ru.itmo.organization.mapper.ImportMapper;
 import ru.itmo.organization.model.ImportObjectType;
 
 @Service
@@ -21,8 +20,9 @@ public class ImportExecutorService {
     private final CoordinatesService coordinatesService;
     private final LocationService locationService;
     private final AddressService addressService;
+    private final ImportMapper importMapper;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ)
     public List<?> executeImport(List<?> records, ImportObjectType type) {
         if (records == null || records.isEmpty()) {
             throw new IllegalArgumentException("Файл не содержит записей для импорта");
@@ -44,32 +44,25 @@ public class ImportExecutorService {
     private Object handleSingleImport(Object dto, ImportObjectType type) {
         ImportObjectType resolvedType = type == null ? ImportObjectType.ORGANIZATION : type;
         return switch (resolvedType) {
-            case ORGANIZATION -> organizationService.create((OrganizationDto) dto);
-            case COORDINATES -> coordinatesService.create((CoordinatesDto) dto);
-            case LOCATION -> locationService.create((LocationDto) dto);
-            case ADDRESS -> importAddress((AddressDto) dto);
+            case ORGANIZATION -> organizationService.create(importMapper.toOrganizationDto((ru.itmo.organization.dto.ImportOrganizationDto) dto));
+            case COORDINATES -> coordinatesService.create(importMapper.toCoordinatesDto((ru.itmo.organization.dto.ImportCoordinatesDto) dto));
+            case LOCATION -> locationService.create(importMapper.toLocationDto((ru.itmo.organization.dto.ImportLocationDto) dto));
+            case ADDRESS -> importAddress((ru.itmo.organization.dto.ImportAddressDto) dto);
         };
     }
 
-    private AddressDto importAddress(AddressDto dto) {
+    private AddressDto importAddress(ru.itmo.organization.dto.ImportAddressDto dto) {
         if (dto == null) {
             throw new IllegalArgumentException("Адрес обязателен");
         }
-        if (dto.getTownId() == null && dto.getTown() == null) {
-            throw new IllegalArgumentException("Не указан город для адреса");
-        }
-        AddressDto payload = dto;
-        if (dto.getTownId() == null && dto.getTown() != null) {
-            LocationDto locationDto = dto.getTown();
-            LocationDto savedTown = locationService.create(locationDto);
-            payload = new AddressDto(
-                    dto.getId(),
-                    dto.getZipCode(),
-                    savedTown.getId(),
-                    null,
-                    dto.getIsUpdated()
-            );
-        }
+        LocationDto savedTown = locationService.create(importMapper.toLocationDto(dto.getTown()));
+        AddressDto payload = new AddressDto(
+                null,
+                dto.getZipCode(),
+                savedTown.getId(),
+                null,
+                null
+        );
         return addressService.create(payload);
     }
 
@@ -78,20 +71,6 @@ public class ImportExecutorService {
         if (message == null || message.isBlank()) {
             return "Неизвестная ошибка";
         }
-
-        String cleaned = message
-                .replace("create.dto.", "")
-                .replace("fullName:", "")
-                .replace("coordinates:", "")
-                .replace("postalAddress.zipCode:", "")
-                .replace("postalAddress:", "")
-                .replace(":", "");
-
-        String[] parts = cleaned.split(",");
-        return java.util.Arrays.stream(parts)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .reduce((a, b) -> a + "; " + b)
-                .orElse(cleaned);
+        return message.trim();
     }
 }

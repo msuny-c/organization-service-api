@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import ru.itmo.organization.dto.AddressDto;
-import ru.itmo.organization.dto.CoordinatesDto;
 import ru.itmo.organization.dto.ImportOperationDto;
-import ru.itmo.organization.dto.LocationDto;
 import ru.itmo.organization.dto.OrganizationDto;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.model.ImportObjectType;
@@ -32,7 +29,7 @@ public class ImportService {
     private final ObjectMapper objectMapper;
 
     @Transactional(noRollbackFor = Exception.class)
-    public ImportOperationDto importOrganizations(
+    public ImportOperationDto importObjects(
             MultipartFile file,
             ImportObjectType objectType,
             Authentication authentication) {
@@ -98,10 +95,10 @@ public class ImportService {
         try {
             ImportObjectType targetType = type == null ? ImportObjectType.ORGANIZATION : type;
             return switch (targetType) {
-                case ORGANIZATION -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<OrganizationDto>>() {});
-                case COORDINATES -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<CoordinatesDto>>() {});
-                case LOCATION -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<LocationDto>>() {});
-                case ADDRESS -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<AddressDto>>() {});
+                case ORGANIZATION -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<ru.itmo.organization.dto.ImportOrganizationDto>>() {});
+                case COORDINATES -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<ru.itmo.organization.dto.ImportCoordinatesDto>>() {});
+                case LOCATION -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<ru.itmo.organization.dto.ImportLocationDto>>() {});
+                case ADDRESS -> objectMapper.readValue(file.getInputStream(), new TypeReference<List<ru.itmo.organization.dto.ImportAddressDto>>() {});
             };
         } catch (IOException e) {
             throw new IllegalArgumentException("Не удалось прочитать файл импорта: " + e.getMessage(), e);

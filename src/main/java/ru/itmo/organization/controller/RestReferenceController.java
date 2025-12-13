@@ -125,6 +125,7 @@ public class RestReferenceController {
 
     @PutMapping("/locations/{id}")
     public ResponseEntity<LocationDto> updateLocation(@PathVariable Long id, @Valid @RequestBody LocationDto dto) {
+        dto.setId(id);
         LocationDto updated = locationService.update(id, dto);
         return ResponseEntity.ok(updated);
     }

@@ -1,0 +1,6 @@
+[
+  { "x": 501, "y": 601, "z": 5.1, "name": "East Point" },
+  { "x": 502, "y": 602, "z": 6.2, "name": "West Ridge" },
+  { "x": 503, "y": 603, "z": 7.3, "name": "South Lake" },
+  { "x": 504, "y": 604, "z": 8.4, "name": "North Crest" }
+]

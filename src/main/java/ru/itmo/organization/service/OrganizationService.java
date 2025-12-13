@@ -55,7 +55,7 @@ public class OrganizationService {
         return mapper.toDto(organization);
     }
     
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public OrganizationDto create(@Valid @UniqueOrganization OrganizationDto dto) {
         Organization organization = mapper.toEntity(dto);
         organization.setCreationDate(LocalDate.now());
@@ -78,7 +78,7 @@ public class OrganizationService {
         return mapper.toDto(saved);
     }
     
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public OrganizationDto update(Long id, @Valid @UniqueOrganization OrganizationDto dto) {
         Organization existing = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));
@@ -113,7 +113,7 @@ public class OrganizationService {
         return mapper.toDto(updated);
     }
     
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void delete(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));
@@ -152,7 +152,7 @@ public class OrganizationService {
         return organizationRepository.countByType(type);
     }
     
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public OrganizationDto dismissAllEmployees(Long id) {
         Organization organization = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));
@@ -162,7 +162,7 @@ public class OrganizationService {
         return mapper.toDto(updated);
     }
     
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public OrganizationDto absorb(Long absorbingId, Long absorbedId) {
         if (absorbingId.equals(absorbedId)) {
             throw new IllegalArgumentException("Организация не может поглотить саму себя");

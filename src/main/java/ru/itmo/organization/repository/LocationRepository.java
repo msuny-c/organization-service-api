@@ -54,6 +54,20 @@ public class LocationRepository {
         return count != null && count > 0;
     }
 
+    public boolean existsByName(String name, Long excludeId) {
+        if (name == null || name.trim().isEmpty()) {
+            return false;
+        }
+        Long count = entityManager.createQuery(
+                        "SELECT COUNT(l.id) FROM Location l WHERE LOWER(l.name) = LOWER(:name) "
+                                + "AND (:excludeId IS NULL OR l.id <> :excludeId)",
+                        Long.class)
+                .setParameter("name", name.trim())
+                .setParameter("excludeId", excludeId)
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
     public Page<Location> findAll(Pageable pageable) {
         List<Location> locations = entityManager.createQuery(
                         "SELECT l FROM Location l ORDER BY l." + pageable.getSort().toString().replace(":", " "),

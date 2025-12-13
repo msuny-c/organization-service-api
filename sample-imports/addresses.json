@@ -1,0 +1,14 @@
+[
+  {
+    "zipCode": "7100001",
+    "town": { "x": 101, "y": 201, "z": 1.2, "name": "Maple Town" }
+  },
+  {
+    "zipCode": "7100002",
+    "town": { "x": 102, "y": 202, "z": 2.4, "name": "Birch Valley" }
+  },
+  {
+    "zipCode": "7100003",
+    "town": { "x": 103, "y": 203, "z": 3.6, "name": "Cedar Hills" }
+  }
+]

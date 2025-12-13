@@ -6,20 +6,24 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import ru.itmo.organization.dto.LocationDto;
-import ru.itmo.organization.mapper.OrganizationMapper;
+import ru.itmo.organization.mapper.ReferenceMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
 import ru.itmo.organization.repository.LocationRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+import ru.itmo.organization.validation.UniqueLocation;
 
 @Service
 @Transactional
+@Validated
 @RequiredArgsConstructor
 public class LocationService {
 
     private final LocationRepository locationRepository;
-    private final OrganizationMapper mapper;
+    private final ReferenceMapper mapper;
     private final WebSocketService webSocketService;
 
     @Transactional(readOnly = true)
@@ -44,22 +48,17 @@ public class LocationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
     }
 
-    public LocationDto create(LocationDto dto) {
-        var entity = mapper.toEntity(dto);
-        var saved = locationRepository.save(entity);
-        webSocketService.broadcastLocationsUpdate();
-        return mapper.toDto(saved);
+    public LocationDto create(@Valid @UniqueLocation LocationDto dto) {
+        return saveAndBroadcast(mapper.toEntity(dto));
     }
 
-    public LocationDto update(Long id, LocationDto dto) {
+    public LocationDto update(Long id, @Valid @UniqueLocation LocationDto dto) {
         var existing = locationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
         existing.setX(dto.getX());
         existing.setY(dto.getY());
         existing.setZ(dto.getZ());
-        var saved = locationRepository.save(existing);
-        webSocketService.broadcastLocationsUpdate();
-        return mapper.toDto(saved);
+        return saveAndBroadcast(existing);
     }
 
     public void delete(Long id) {
@@ -72,5 +71,11 @@ public class LocationService {
         
         locationRepository.delete(existing);
         webSocketService.broadcastLocationsUpdate();
+    }
+
+    private LocationDto saveAndBroadcast(ru.itmo.organization.model.Location entity) {
+        var saved = locationRepository.save(entity);
+        webSocketService.broadcastLocationsUpdate();
+        return mapper.toDto(saved);
     }
 }

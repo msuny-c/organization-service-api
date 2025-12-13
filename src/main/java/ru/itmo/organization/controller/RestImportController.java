@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,12 +23,12 @@ public class RestImportController {
     private final ImportService importService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ImportOperationDto> importOrganizations(
+    public ResponseEntity<ImportOperationDto> importObjects(
             @RequestParam("file") MultipartFile file,
             @RequestParam(name = "objectType", defaultValue = "ORGANIZATION") ru.itmo.organization.model.ImportObjectType objectType,
             Authentication authentication) {
 
-        ImportOperationDto dto = importService.importOrganizations(file, objectType, authentication);
+        ImportOperationDto dto = importService.importObjects(file, objectType, authentication);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(dto);
     }
 
@@ -47,7 +48,7 @@ public class RestImportController {
     @GetMapping("/template")
     public ResponseEntity<ByteArrayResource> downloadTemplate(
             @RequestParam(name = "objectType", defaultValue = "ORGANIZATION") ru.itmo.organization.model.ImportObjectType objectType) {
-        String template = buildTemplate(objectType);
+        String template = readTemplate(objectType);
         ByteArrayResource resource = new ByteArrayResource(template.getBytes(StandardCharsets.UTF_8));
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"import-template.json\"")
@@ -55,53 +56,21 @@ public class RestImportController {
                 .body(resource);
     }
 
-    private String buildTemplate(ru.itmo.organization.model.ImportObjectType type) {
-        return switch (type == null ? ru.itmo.organization.model.ImportObjectType.ORGANIZATION : type) {
-            case ORGANIZATION -> """
-                    [
-                      {
-                        "name": "Demo Org",
-                        "coordinates": { "x": 100, "y": 200 },
-                        "employeesCount": 50,
-                        "annualTurnover": 500000,
-                        "rating": 4,
-                        "fullName": "Demo Org LLC",
-                        "type": "COMMERCIAL",
-                        "postalAddress": {
-                          "zipCode": "1900001",
-                          "town": { "x": 1, "y": 2, "z": 3.5, "name": "Sample Town" }
-                        },
-                        "officialAddress": {
-                          "zipCode": "1900002",
-                          "town": { "x": 4, "y": 5, "z": 6.5, "name": "Another Town" }
-                        }
-                      }
-                    ]
-                    """;
-            case COORDINATES -> """
-                    [
-                      { "x": 10, "y": 20 },
-                      { "x": 30, "y": 40 }
-                    ]
-                    """;
-            case LOCATION -> """
-                    [
-                      { "x": 1, "y": 2, "z": 3.3, "name": "Location A" },
-                      { "x": 5, "y": 6, "z": 7.7, "name": "Location B" }
-                    ]
-                    """;
-            case ADDRESS -> """
-                    [
-                      {
-                        "zipCode": "1970001",
-                        "town": { "x": 1, "y": 1, "z": 1.1, "name": "Town A" }
-                      },
-                      {
-                        "zipCode": "1970002",
-                        "townId": 1
-                      }
-                    ]
-                    """;
+    private String readTemplate(ru.itmo.organization.model.ImportObjectType type) {
+        ru.itmo.organization.model.ImportObjectType resolvedType =
+                type == null ? ru.itmo.organization.model.ImportObjectType.ORGANIZATION : type;
+        String filename = switch (resolvedType) {
+            case ORGANIZATION -> "import-templates/organization.json";
+            case COORDINATES -> "import-templates/coordinates.json";
+            case LOCATION -> "import-templates/location.json";
+            case ADDRESS -> "import-templates/address.json";
         };
+        try {
+            ClassPathResource resource = new ClassPathResource(filename);
+            byte[] bytes = resource.getInputStream().readAllBytes();
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Не удалось загрузить шаблон импорта");
+        }
     }
 }

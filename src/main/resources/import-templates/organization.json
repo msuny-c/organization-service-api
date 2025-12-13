@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Demo Org",
+    "coordinates": { "x": 100, "y": 200 },
+    "employeesCount": 50,
+    "annualTurnover": 500000,
+    "rating": 4,
+    "fullName": "Demo Org LLC",
+    "type": "COMMERCIAL",
+    "postalAddress": {
+      "zipCode": "1900001",
+      "town": { "x": 1, "y": 2, "z": 3.5, "name": "Sample Town" }
+    },
+    "officialAddress": {
+      "zipCode": "1900002",
+      "town": { "x": 4, "y": 5, "z": 6.5, "name": "Another Town" }
+    }
+  }
+]

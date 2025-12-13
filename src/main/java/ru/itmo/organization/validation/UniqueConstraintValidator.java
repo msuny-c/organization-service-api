@@ -1,4 +1,4 @@
-package ru.itmo.organization.service;
+package ru.itmo.organization.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.itmo.organization.dto.OrganizationDto;
 import ru.itmo.organization.repository.OrganizationRepository;
-import ru.itmo.organization.validation.UniqueOrganization;
 
 @Component
 @RequiredArgsConstructor
@@ -27,22 +26,6 @@ public class UniqueConstraintValidator implements ConstraintValidator<UniqueOrga
         if (dto.getFullName() != null && organizationRepository.existsByFullName(dto.getFullName(), excludeId)) {
             context.buildConstraintViolationWithTemplate("Организация с таким полным названием уже существует")
                     .addPropertyNode("fullName")
-                    .addConstraintViolation();
-            valid = false;
-        }
-
-        if (dto.getCoordinates() != null
-                && organizationRepository.existsByCoordinates(dto.getCoordinates().getX(), dto.getCoordinates().getY(), excludeId)) {
-            context.buildConstraintViolationWithTemplate("Организация с такими координатами уже существует")
-                    .addPropertyNode("coordinates")
-                    .addConstraintViolation();
-            valid = false;
-        }
-
-        if (dto.getPostalAddress() != null
-                && organizationRepository.existsByPostalZip(dto.getPostalAddress().getZipCode(), excludeId)) {
-            context.buildConstraintViolationWithTemplate("Почтовый индекс почтового адреса должен быть уникальным")
-                    .addPropertyNode("postalAddress.zipCode")
                     .addConstraintViolation();
             valid = false;
         }
