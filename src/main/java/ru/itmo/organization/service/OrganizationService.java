@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import jakarta.validation.Valid;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -55,7 +59,11 @@ public class OrganizationService {
         return mapper.toDto(organization);
     }
     
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Retryable(
+            retryFor = {PessimisticLockingFailureException.class, TransactionSystemException.class},
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 50, multiplier = 2.0, maxDelay = 1000, random = true))
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrganizationDto create(@Valid @UniqueOrganization OrganizationDto dto) {
         Organization organization = mapper.toEntity(dto);
         organization.setCreationDate(LocalDate.now());
@@ -78,7 +86,11 @@ public class OrganizationService {
         return mapper.toDto(saved);
     }
     
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Retryable(
+            retryFor = {PessimisticLockingFailureException.class, TransactionSystemException.class},
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 50, multiplier = 2.0, maxDelay = 1000, random = true))
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public OrganizationDto update(Long id, @Valid @UniqueOrganization OrganizationDto dto) {
         Organization existing = organizationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Организация с ID " + id + " не найдена"));

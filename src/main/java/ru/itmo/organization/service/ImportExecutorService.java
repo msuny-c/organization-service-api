@@ -2,6 +2,9 @@ package ru.itmo.organization.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,7 +25,11 @@ public class ImportExecutorService {
     private final AddressService addressService;
     private final ImportMapper importMapper;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.REPEATABLE_READ)
+    @Retryable(
+            retryFor = {PessimisticLockingFailureException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 50, multiplier = 2.0, maxDelay = 1000, random = true))
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
     public List<?> executeImport(List<?> records, ImportObjectType type) {
         if (records == null || records.isEmpty()) {
             throw new IllegalArgumentException("Файл не содержит записей для импорта");

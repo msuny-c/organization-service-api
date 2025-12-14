@@ -1,16 +1,23 @@
 package ru.itmo.organization.exception;
 
+import java.sql.SQLException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -36,6 +43,35 @@ public class RestExceptionHandler {
             return Map.of("error", message);
         }
         return Map.of("error", ex.getMessage());
+    }
+
+    @ExceptionHandler(PessimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> handleConcurrency(Exception ex) {
+        return Map.of("error", "Конфликт параллельных изменений. Повторите запрос.");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNoResourceFound(NoResourceFoundException ex) {
+        return Map.of("error", "Ресурс не найден");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public Map<String, String> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return Map.of("error", "Метод не поддерживается для этого ресурса");
+    }
+
+    @ExceptionHandler({TransactionSystemException.class, JpaSystemException.class})
+    public ResponseEntity<Map<String, String>> handleTransactionalWrappers(RuntimeException ex) {
+        if (isSerializationFailure(ex)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Конфликт параллельных изменений. Повторите запрос."));
+        }
+        log.error("Unexpected transactional error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Внутренняя ошибка сервера"));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -70,5 +106,23 @@ public class RestExceptionHandler {
     public Map<String, String> handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);
         return Map.of("error", "Внутренняя ошибка сервера");
+    }
+
+    private static boolean isSerializationFailure(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof PessimisticLockingFailureException) {
+                return true;
+            }
+            if (current instanceof SQLException sqlEx) {
+                String sqlState = sqlEx.getSQLState();
+                if ("40001".equals(sqlState) || "40P01".equals(sqlState)) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        String message = ex.getMessage();
+        return message != null && message.contains("could not serialize access");
     }
 }

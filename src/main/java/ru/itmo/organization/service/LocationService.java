@@ -5,6 +5,10 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.TransactionSystemException;
 import ru.itmo.organization.dto.LocationDto;
 import ru.itmo.organization.mapper.ReferenceMapper;
 import ru.itmo.organization.exception.ResourceNotFoundException;
@@ -12,6 +16,7 @@ import ru.itmo.organization.repository.LocationRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 import ru.itmo.organization.validation.UniqueLocation;
@@ -48,10 +53,20 @@ public class LocationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
     }
 
+    @Retryable(
+            retryFor = {PessimisticLockingFailureException.class, TransactionSystemException.class},
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 50, multiplier = 2.0, maxDelay = 1000, random = true))
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public LocationDto create(@Valid @UniqueLocation LocationDto dto) {
         return saveAndBroadcast(mapper.toEntity(dto));
     }
 
+    @Retryable(
+            retryFor = {PessimisticLockingFailureException.class, TransactionSystemException.class},
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 50, multiplier = 2.0, maxDelay = 1000, random = true))
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public LocationDto update(Long id, @Valid @UniqueLocation LocationDto dto) {
         var existing = locationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Локация с ID " + id + " не найдена"));
