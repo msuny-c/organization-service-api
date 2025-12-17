@@ -78,12 +78,6 @@
         </dependency>
 
         <dependency>
-            <groupId>jakarta.cache</groupId>
-            <artifactId>jakarta.cache-api</artifactId>
-            <version>2.0.1</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>

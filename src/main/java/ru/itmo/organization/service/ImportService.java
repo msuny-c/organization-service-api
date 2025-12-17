@@ -68,20 +68,22 @@ public class ImportService {
             operation = startOperation(userContext.username(), objectType, storageTx);
 
             List<?> records = parseFile(file, objectType);
+            final StorageTransaction tx = storageTx;
+            final ImportOperation currentOperation = operation;
             List<?> created = importTransactionTemplate.execute(status -> {
-                ImportOperation managed = importOperationRepository.findById(operation.getId())
+                ImportOperation managed = importOperationRepository.findById(currentOperation.getId())
                         .orElseThrow(() -> new ResourceNotFoundException("Операция импорта не найдена"));
 
                 List<?> imported = importExecutorService.executeImport(records, objectType);
-                managed.setStorageBucket(storageTx.bucket());
-                managed.setStorageObject(storageTx.finalObjectName());
-                managed.setStorageFileName(storageTx.originalFileName());
-                managed.setStorageContentType(storageTx.contentType());
-                managed.setStorageSize(storageTx.size());
+                managed.setStorageBucket(tx.bucket());
+                managed.setStorageObject(tx.finalObjectName());
+                managed.setStorageFileName(tx.originalFileName());
+                managed.setStorageContentType(tx.contentType());
+                managed.setStorageSize(tx.size());
                 managed.markSuccess(imported.size());
                 importOperationRepository.save(managed);
 
-                storageService.commit(storageTx);
+                storageService.commit(tx);
                 return imported;
             });
 
