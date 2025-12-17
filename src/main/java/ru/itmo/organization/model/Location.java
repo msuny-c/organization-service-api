@@ -5,12 +5,15 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "location")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "ru.itmo.organization.model.Location")
 public class Location {
     
     @Id

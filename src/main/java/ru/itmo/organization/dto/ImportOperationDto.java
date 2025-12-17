@@ -19,6 +19,12 @@ public class ImportOperationDto {
     private java.time.LocalDateTime startedAt;
     private Integer addedCount;
     private List<OrganizationDto> createdOrganizations;
+    private String storageBucket;
+    private String storageObject;
+    private String storageFileName;
+    private String storageContentType;
+    private Long storageSize;
+    private String errorMessage;
 
     public static ImportOperationDto fromEntity(ImportOperation operation) {
         ImportOperationDto dto = new ImportOperationDto();
@@ -28,6 +34,12 @@ public class ImportOperationDto {
         dto.setUsername(operation.getUsername());
         dto.setStartedAt(operation.getStartedAt());
         dto.setAddedCount(operation.getAddedCount());
+        dto.setStorageBucket(operation.getStorageBucket());
+        dto.setStorageObject(operation.getStorageObject());
+        dto.setStorageFileName(operation.getStorageFileName());
+        dto.setStorageContentType(operation.getStorageContentType());
+        dto.setStorageSize(operation.getStorageSize());
+        dto.setErrorMessage(operation.getErrorMessage());
         return dto;
     }
 

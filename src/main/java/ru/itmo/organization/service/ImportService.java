@@ -6,10 +6,13 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import ru.itmo.organization.dto.ImportOperationDto;
 import ru.itmo.organization.dto.OrganizationDto;
@@ -18,37 +21,85 @@ import ru.itmo.organization.model.ImportObjectType;
 import ru.itmo.organization.model.ImportOperation;
 import ru.itmo.organization.model.ImportStatus;
 import ru.itmo.organization.repository.ImportOperationRepository;
+import ru.itmo.organization.service.storage.StorageService;
+import ru.itmo.organization.service.storage.StorageTransaction;
 
 @Service
-@RequiredArgsConstructor
 public class ImportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ImportService.class);
 
     private final ImportOperationRepository importOperationRepository;
     private final ImportExecutorService importExecutorService;
     private final WebSocketService webSocketService;
     private final ObjectMapper objectMapper;
+    private final StorageService storageService;
+    private final TransactionTemplate importTransactionTemplate;
+    private final TransactionTemplate logTransactionTemplate;
 
-    @Transactional(noRollbackFor = Exception.class)
+    public ImportService(
+            ImportOperationRepository importOperationRepository,
+            ImportExecutorService importExecutorService,
+            WebSocketService webSocketService,
+            ObjectMapper objectMapper,
+            StorageService storageService,
+            PlatformTransactionManager transactionManager) {
+        this.importOperationRepository = importOperationRepository;
+        this.importExecutorService = importExecutorService;
+        this.webSocketService = webSocketService;
+        this.objectMapper = objectMapper;
+        this.storageService = storageService;
+        this.importTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.importTransactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_SERIALIZABLE);
+        this.logTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.logTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
     public ImportOperationDto importObjects(
             MultipartFile file,
             ImportObjectType objectType,
             Authentication authentication) {
+
         UserContext userContext = toUserContext(authentication);
-            ImportOperation operation = startOperation(file, userContext.username(), objectType);
+        StorageTransaction storageTx = null;
+        ImportOperation operation = null;
         try {
+            storageTx = storageService.stageImportFile(file);
+            operation = startOperation(userContext.username(), objectType, storageTx);
+
             List<?> records = parseFile(file, objectType);
-            List<?> created = importExecutorService.executeImport(records, objectType);
-            operation.markSuccess(created.size());
-            importOperationRepository.save(operation);
-            broadcastByType(objectType, !created.isEmpty());
+            List<?> created = importTransactionTemplate.execute(status -> {
+                ImportOperation managed = importOperationRepository.findById(operation.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Операция импорта не найдена"));
+
+                List<?> imported = importExecutorService.executeImport(records, objectType);
+                managed.setStorageBucket(storageTx.bucket());
+                managed.setStorageObject(storageTx.finalObjectName());
+                managed.setStorageFileName(storageTx.originalFileName());
+                managed.setStorageContentType(storageTx.contentType());
+                managed.setStorageSize(storageTx.size());
+                managed.markSuccess(imported.size());
+                importOperationRepository.save(managed);
+
+                storageService.commit(storageTx);
+                return imported;
+            });
+
             webSocketService.broadcastImportsUpdate();
-            return ImportOperationDto.fromEntity(operation, created.stream()
-                    .filter(OrganizationDto.class::isInstance)
-                    .map(OrganizationDto.class::cast)
-                    .toList());
+            if (created == null) {
+                throw new IllegalStateException("Импорт не выполнен");
+            }
+            broadcastByType(objectType, !created.isEmpty());
+            return ImportOperationDto.fromEntity(
+                    importOperationRepository.findById(operation.getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Операция импорта не найдена")),
+                    created.stream()
+                            .filter(OrganizationDto.class::isInstance)
+                            .map(OrganizationDto.class::cast)
+                            .toList());
         } catch (Exception ex) {
-            operation.markFailed(extractMessage(ex));
-            importOperationRepository.save(operation);
+            storageService.rollback(storageTx);
+            safeMarkFailed(operation, extractMessage(ex));
             webSocketService.broadcastImportsUpdate();
             if (ex instanceof IllegalArgumentException) {
                 throw ex;
@@ -79,13 +130,46 @@ public class ImportService {
         return ImportOperationDto.fromEntity(operation);
     }
 
-    private ImportOperation startOperation(MultipartFile file, String username, ImportObjectType type) {
+    public ImportOperation getOperationEntity(Long id, Authentication authentication) {
+        UserContext userContext = toUserContext(authentication);
+        ImportOperation operation = importOperationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Операция импорта не найдена"));
+
+        if (!userContext.admin() && !operation.getUsername().equals(userContext.username())) {
+            throw new ResourceNotFoundException("Операция импорта не найдена");
+        }
+
+        return operation;
+    }
+
+    private ImportOperation startOperation(String username, ImportObjectType type, StorageTransaction storageTx) {
         ImportOperation operation = new ImportOperation();
         operation.setUsername(username == null || username.isBlank() ? "anonymous" : username.trim());
         operation.setStartedAt(LocalDateTime.now());
         operation.setStatus(ImportStatus.IN_PROGRESS);
         operation.setObjectType(type == null ? ImportObjectType.ORGANIZATION : type);
-        return importOperationRepository.save(operation);
+        operation.setStorageFileName(storageTx.originalFileName());
+        operation.setStorageContentType(storageTx.contentType());
+        operation.setStorageSize(storageTx.size());
+        return logTransactionTemplate.execute(status -> importOperationRepository.save(operation));
+    }
+
+    private void safeMarkFailed(ImportOperation operation, String message) {
+        if (operation == null || operation.getId() == null) {
+            return;
+        }
+        try {
+            logTransactionTemplate.executeWithoutResult(status -> {
+                importOperationRepository.findById(operation.getId()).ifPresent(op -> {
+                    op.markFailed(message);
+                    op.setStorageBucket(null);
+                    op.setStorageObject(null);
+                    importOperationRepository.save(op);
+                });
+            });
+        } catch (Exception ex) {
+            log.warn("Не удалось зафиксировать статус ошибки импорта: {}", ex.getMessage());
+        }
     }
 
     private List<?> parseFile(MultipartFile file, ImportObjectType type) {

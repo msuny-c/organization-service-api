@@ -29,7 +29,7 @@ public class ImportExecutorService {
             retryFor = {PessimisticLockingFailureException.class},
             maxAttempts = 5,
             backoff = @Backoff(delay = 50, multiplier = 2.0, maxDelay = 1000, random = true))
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
+    @Transactional(propagation = Propagation.MANDATORY, isolation = Isolation.SERIALIZABLE)
     public List<?> executeImport(List<?> records, ImportObjectType type) {
         if (records == null || records.isEmpty()) {
             throw new IllegalArgumentException("Файл не содержит записей для импорта");

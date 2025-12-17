@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,7 +14,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.itmo.organization.dto.ImportOperationDto;
+import ru.itmo.organization.exception.ResourceNotFoundException;
+import ru.itmo.organization.model.ImportOperation;
 import ru.itmo.organization.service.ImportService;
+import ru.itmo.organization.service.storage.StorageService;
+import ru.itmo.organization.service.storage.StorageStream;
 
 @RestController
 @RequestMapping("/api/imports")
@@ -21,6 +26,7 @@ import ru.itmo.organization.service.ImportService;
 public class RestImportController {
 
     private final ImportService importService;
+    private final StorageService storageService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImportOperationDto> importObjects(
@@ -43,6 +49,33 @@ public class RestImportController {
             Authentication authentication) {
 
         return ResponseEntity.ok(importService.getOperation(id, authentication));
+    }
+
+    @GetMapping("/{id}/file")
+    public ResponseEntity<InputStreamResource> downloadFile(
+            @PathVariable Long id,
+            Authentication authentication) {
+        ImportOperation operation = importService.getOperationEntity(id, authentication);
+        if (operation.getStorageBucket() == null || operation.getStorageObject() == null) {
+            throw new ResourceNotFoundException("Файл для операции импорта не найден");
+        }
+        StorageStream stream = storageService.load(
+                operation.getStorageBucket(),
+                operation.getStorageObject(),
+                operation.getStorageFileName(),
+                operation.getStorageContentType());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDispositionFormData("attachment", operation.getStorageFileName());
+        headers.setContentType(MediaType.parseMediaType(
+                operation.getStorageContentType() == null ? "application/octet-stream" : operation.getStorageContentType()));
+        if (operation.getStorageSize() != null) {
+            headers.setContentLength(operation.getStorageSize());
+        }
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(new InputStreamResource(stream.inputStream()));
     }
 
     @GetMapping("/template")

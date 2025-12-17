@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.ehcache.org/v3"
+        xmlns:jsr107="http://www.ehcache.org/v3/jsr107"
+        xsi:schemaLocation="
+          http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core.xsd
+          http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext.xsd">
+
+    <service>
+        <jsr107:defaults/>
+    </service>
+
+    <cache alias="ru.itmo.organization.model.Organization">
+        <key-type>java.lang.Long</key-type>
+        <value-type>ru.itmo.organization.model.Organization</value-type>
+        <expiry>
+            <ttl unit="minutes">10</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">5000</heap>
+            <offheap unit="MB">64</offheap>
+        </resources>
+    </cache>
+
+    <cache alias="ru.itmo.organization.model.Address">
+        <key-type>java.lang.Long</key-type>
+        <value-type>ru.itmo.organization.model.Address</value-type>
+        <expiry>
+            <ttl unit="minutes">30</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">2000</heap>
+            <offheap unit="MB">32</offheap>
+        </resources>
+    </cache>
+
+    <cache alias="ru.itmo.organization.model.Location">
+        <key-type>java.lang.Long</key-type>
+        <value-type>ru.itmo.organization.model.Location</value-type>
+        <expiry>
+            <ttl unit="minutes">30</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">2000</heap>
+            <offheap unit="MB">32</offheap>
+        </resources>
+    </cache>
+
+    <cache alias="ru.itmo.organization.model.Coordinates">
+        <key-type>java.lang.Long</key-type>
+        <value-type>ru.itmo.organization.model.Coordinates</value-type>
+        <expiry>
+            <ttl unit="minutes">10</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">2000</heap>
+            <offheap unit="MB">16</offheap>
+        </resources>
+    </cache>
+
+    <cache alias="ru.itmo.organization.model.UserAccount">
+        <key-type>java.lang.Long</key-type>
+        <value-type>ru.itmo.organization.model.UserAccount</value-type>
+        <expiry>
+            <ttl unit="minutes">60</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">500</heap>
+            <offheap unit="MB">8</offheap>
+        </resources>
+    </cache>
+
+    <cache alias="ru.itmo.organization.model.ImportOperation">
+        <key-type>java.lang.Long</key-type>
+        <value-type>ru.itmo.organization.model.ImportOperation</value-type>
+        <expiry>
+            <ttl unit="minutes">120</ttl>
+        </expiry>
+        <resources>
+            <heap unit="entries">500</heap>
+            <offheap unit="MB">8</offheap>
+        </resources>
+    </cache>
+
+</config>

@@ -4,6 +4,20 @@ spring:
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: ${DRUID_INITIAL_SIZE:5}
+      max-active: ${DRUID_MAX_ACTIVE:20}
+      min-idle: ${DRUID_MIN_IDLE:5}
+      max-wait: ${DRUID_MAX_WAIT:60000}
+      validation-query: ${DRUID_VALIDATION_QUERY:SELECT 1}
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      pool-prepared-statements: true
+      max-open-prepared-statements: 50
   
   jpa:
     hibernate:
@@ -14,6 +28,19 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         default_schema: ${POSTGRES_SCHEMA}
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+        javax:
+          cache:
+            provider: org.ehcache.jsr107.EhcacheCachingProvider
+            uri: classpath:ehcache.xml
+        generate_statistics: true
+  cache:
+    jcache:
+      config: classpath:ehcache.xml
 
 server:
   port: ${SERVER_PORT:8080}
@@ -28,3 +55,16 @@ logging:
     ru.itmo: ${LOG_LEVEL:INFO}
     org.springframework.web: ${LOG_LEVEL:INFO}
     org.hibernate.SQL: ${LOG_LEVEL:INFO}
+
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket: ${MINIO_BUCKET:imports}
+  secure: ${MINIO_SECURE:false}
+  region: ${MINIO_REGION:us-east-1}
+
+app:
+  cache:
+    statistics:
+      logging-enabled: ${CACHE_STATS_LOGGING:false}

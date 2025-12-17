@@ -5,12 +5,15 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "import_operation")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "ru.itmo.organization.model.ImportOperation")
 public class ImportOperation {
 
     @Id
@@ -33,14 +36,34 @@ public class ImportOperation {
 
     @Column(name = "added_count")
     private Integer addedCount;
+    
+    @Column(name = "storage_bucket")
+    private String storageBucket;
+    
+    @Column(name = "storage_object")
+    private String storageObject;
+    
+    @Column(name = "storage_filename")
+    private String storageFileName;
+    
+    @Column(name = "storage_content_type")
+    private String storageContentType;
+    
+    @Column(name = "storage_size")
+    private Long storageSize;
+    
+    @Column(name = "error_message", length = 2048)
+    private String errorMessage;
 
     public void markSuccess(int added) {
         this.status = ImportStatus.SUCCESS;
         this.addedCount = added;
+        this.errorMessage = null;
     }
 
     public void markFailed(String message) {
         this.status = ImportStatus.FAILED;
         this.addedCount = null;
+        this.errorMessage = message;
     }
 }

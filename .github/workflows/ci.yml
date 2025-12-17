@@ -114,6 +114,52 @@ jobs:
             app.env \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/apps/organization-management/app.env"
 
+      - name: Ensure MinIO is running on server
+        run: |
+            ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" <<'SSH'
+            set -euo pipefail
+            APP_DIR="$HOME/apps/organization-management"
+            MINIO_DIR="$APP_DIR/minio"
+            mkdir -p "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
+
+            if [ ! -x "$MINIO_DIR/bin/minio" ]; then
+              curl -sSfL https://dl.min.io/server/minio/release/linux-amd64/minio -o "$MINIO_DIR/bin/minio"
+              chmod +x "$MINIO_DIR/bin/minio"
+            fi
+
+            ENV_FILE="$MINIO_DIR/minio.env"
+            if [ -f "$ENV_FILE" ]; then
+              . "$ENV_FILE"
+            fi
+
+            if [ -f "$APP_DIR/app.env" ]; then
+              set -a
+              . "$APP_DIR/app.env"
+              set +a
+            fi
+
+            MINIO_PORT="${MINIO_PORT:-9000}"
+            MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-9001}"
+            echo "MINIO_PORT=$MINIO_PORT" > "$ENV_FILE"
+            echo "MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT" >> "$ENV_FILE"
+
+            export MINIO_ROOT_USER="${MINIO_ACCESS_KEY:-minioadmin}"
+            export MINIO_ROOT_PASSWORD="${MINIO_SECRET_KEY:-minioadmin}"
+
+            if pgrep -f "$MINIO_DIR/bin/minio server" >/dev/null; then
+              echo "MinIO already running"
+            else
+              nohup "$MINIO_DIR/bin/minio" server "$MINIO_DIR/data" --address ":${MINIO_PORT}" --console-address ":${MINIO_CONSOLE_PORT}" > "$MINIO_DIR/logs/minio.log" 2>&1 &
+              echo "Started MinIO on ports ${MINIO_PORT} (api) / ${MINIO_CONSOLE_PORT} (console)"
+            fi
+
+            TMP="$APP_DIR/app.env.tmp"
+            grep -v "^MINIO_URL=" "$APP_DIR/app.env" > "$TMP" || true
+            echo "MINIO_URL=http://127.0.0.1:${MINIO_PORT}" >> "$TMP"
+            mv "$TMP" "$APP_DIR/app.env"
+            SSH
+
       - name: Restart service on server
         run: |
             ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
