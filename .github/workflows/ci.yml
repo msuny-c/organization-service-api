@@ -2,7 +2,7 @@ name: Build & Promote JAR to Helios
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch: {}
 
 jobs:
@@ -26,14 +26,14 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
           cache: maven
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Build frontend
@@ -71,12 +71,14 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
+    env:
+      JAR_NAME: ${{ needs.build.outputs.jar_name }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: jar
-          path: .
+          path: artifact
 
       - name: Create app.env file from secrets
         env:
@@ -86,16 +88,16 @@ jobs:
           python << 'PYTHON'
           import json
           import os
-          
+
           secrets = json.loads(os.environ.get('ALL_SECRETS', '{}'))
           vars = json.loads(os.environ.get('ALL_VARS', '{}'))
-          
+
           with open('app.env', 'w') as f:
               for key, value in {**secrets, **vars}.items():
                   if key not in ['SSH_KEY', 'SSH_HOST', 'SSH_PORT', 'SSH_USER', 'github_token']:
                       f.write(f'{key}={value}\n')
           PYTHON
-          
+
           echo "Created app.env with $(wc -l < app.env) variables"
 
       - name: Prepare SSH
@@ -105,90 +107,107 @@ jobs:
           chmod 600 ~/.ssh/id_key
           ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Ensure app directory exists on server
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "mkdir -p ~/apps/organization-management"
+
       - name: Upload JAR and app.env to server
         run: |
           scp -P "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
-            ./*.jar \
+            "artifact/${{ env.JAR_NAME }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/apps/organization-management/organization-management.jar"
+
           scp -P "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
             app.env \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/apps/organization-management/app.env"
 
       - name: Ensure MinIO is running on server
         run: |
-            ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" <<'SSH'
-            set -eu
-            APP_DIR="$HOME/apps/organization-management"
-            MINIO_DIR="$APP_DIR/minio"
-            mkdir -p "$APP_DIR" "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
-            echo "Using MINIO_DIR=$MINIO_DIR"
+          ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" 'bash -se' <<'SSH'
+          set -euo pipefail
+          APP_DIR="$HOME/apps/organization-management"
+          MINIO_DIR="$APP_DIR/minio"
+          mkdir -p "$APP_DIR" "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
+          echo "Using MINIO_DIR=$MINIO_DIR"
 
-            if [ ! -x "$MINIO_DIR/bin/minio" ]; then
-              OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-              ARCH="amd64"
-              case "$OS" in
-                freebsd) MINIO_URL="https://dl.min.io/server/minio/release/freebsd-${ARCH}/minio" ;;
-                linux) MINIO_URL="https://dl.min.io/server/minio/release/linux-${ARCH}/minio" ;;
-                *) echo "Unsupported OS: $OS"; exit 1 ;;
-              esac
-              echo "Downloading MinIO from $MINIO_URL"
-              if command -v curl >/dev/null 2>&1; then
-                curl -sSfL "$MINIO_URL" -o "$MINIO_DIR/bin/minio"
-              elif command -v fetch >/dev/null 2>&1; then
-                fetch -o "$MINIO_DIR/bin/minio" "$MINIO_URL"
-              else
-                echo "Neither curl nor fetch available"; exit 1
-              fi
-              chmod +x "$MINIO_DIR/bin/minio"
+          if [ ! -x "$MINIO_DIR/bin/minio" ]; then
+            OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+            ARCH_RAW=$(uname -m)
+            case "$ARCH_RAW" in
+              x86_64|amd64) ARCH="amd64" ;;
+              aarch64|arm64) ARCH="arm64" ;;
+              *) echo "Unsupported arch: $ARCH_RAW"; exit 1 ;;
+            esac
+
+            case "$OS" in
+              freebsd) MINIO_URL="https://dl.min.io/server/minio/release/freebsd-${ARCH}/minio" ;;
+              linux)   MINIO_URL="https://dl.min.io/server/minio/release/linux-${ARCH}/minio" ;;
+              *) echo "Unsupported OS: $OS"; exit 1 ;;
+            esac
+
+            echo "Downloading MinIO from $MINIO_URL"
+            if command -v curl >/dev/null 2>&1; then
+              curl -sSfL "$MINIO_URL" -o "$MINIO_DIR/bin/minio"
+            elif command -v fetch >/dev/null 2>&1; then
+              fetch -o "$MINIO_DIR/bin/minio" "$MINIO_URL"
             else
-              echo "MinIO binary already present"
+              echo "Neither curl nor fetch available"; exit 1
             fi
+            chmod +x "$MINIO_DIR/bin/minio"
+          else
+            echo "MinIO binary already present"
+          fi
 
-            ENV_FILE="$MINIO_DIR/minio.env"
-            if [ -f "$ENV_FILE" ]; then
-              . "$ENV_FILE"
-            fi
+          ENV_FILE="$MINIO_DIR/minio.env"
+          if [ -f "$ENV_FILE" ]; then
+            . "$ENV_FILE"
+          fi
 
-            if [ -f "$APP_DIR/app.env" ]; then
-              set -a
-              . "$APP_DIR/app.env"
-              set +a
-            else
-              touch "$APP_DIR/app.env"
-            fi
+          if [ -f "$APP_DIR/app.env" ]; then
+            set -a
+            . "$APP_DIR/app.env"
+            set +a
+          else
+            touch "$APP_DIR/app.env"
+          fi
 
-            MINIO_PORT="${MINIO_PORT:-9000}"
-            MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-9001}"
-            echo "MINIO_PORT=$MINIO_PORT" > "$ENV_FILE"
-            echo "MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT" >> "$ENV_FILE"
+          MINIO_PORT="${MINIO_PORT:-9000}"
+          MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-9001}"
+          echo "MINIO_PORT=$MINIO_PORT" > "$ENV_FILE"
+          echo "MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT" >> "$ENV_FILE"
 
-            export MINIO_ROOT_USER="${MINIO_ACCESS_KEY:-minioadmin}"
-            export MINIO_ROOT_PASSWORD="${MINIO_SECRET_KEY:-minioadmin}"
+          export MINIO_ROOT_USER="${MINIO_ACCESS_KEY:-minioadmin}"
+          export MINIO_ROOT_PASSWORD="${MINIO_SECRET_KEY:-minioadmin}"
 
-            if pgrep -f "$MINIO_DIR/bin/minio server" >/dev/null; then
-              echo "MinIO already running"
-            else
-              nohup "$MINIO_DIR/bin/minio" server "$MINIO_DIR/data" --address ":${MINIO_PORT}" --console-address ":${MINIO_CONSOLE_PORT}" > "$MINIO_DIR/logs/minio.log" 2>&1 &
-              echo "Started MinIO on ports ${MINIO_PORT} (api) / ${MINIO_CONSOLE_PORT} (console)"
-            fi
+          if pgrep -f "$MINIO_DIR/bin/minio server" >/dev/null; then
+            echo "MinIO already running"
+          else
+            nohup "$MINIO_DIR/bin/minio" server "$MINIO_DIR/data" \
+              --address ":${MINIO_PORT}" \
+              --console-address ":${MINIO_CONSOLE_PORT}" \
+              > "$MINIO_DIR/logs/minio.log" 2>&1 &
+            echo "Started MinIO on ports ${MINIO_PORT} (api) / ${MINIO_CONSOLE_PORT} (console)"
+          fi
 
-            TMP="$APP_DIR/app.env.tmp"
-            if [ -f "$APP_DIR/app.env" ]; then
-              grep -v "^MINIO_URL=" "$APP_DIR/app.env" > "$TMP" || true
-            fi
-            echo "MINIO_URL=http://127.0.0.1:${MINIO_PORT}" >> "$TMP"
-            mv "$TMP" "$APP_DIR/app.env"
-            SSH
+          TMP="$APP_DIR/app.env.tmp"
+          if [ -f "$APP_DIR/app.env" ]; then
+            grep -v "^MINIO_URL=" "$APP_DIR/app.env" > "$TMP" || true
+          fi
+          echo "MINIO_URL=http://127.0.0.1:${MINIO_PORT}" >> "$TMP"
+          mv "$TMP" "$APP_DIR/app.env"
+          SSH
 
       - name: Restart service on server
         run: |
-            ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
+          ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "set -euo pipefail; cd ~/apps/organization-management && ./appctl.sh restart"
 
       - name: Healthcheck
         run: |
-            ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
+          ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "i=0; while [ \$i -lt 300 ]; do nc -z 127.0.0.1 ${{ vars.SERVER_PORT }} && exit 0; sleep 1; i=\$((i+1)); done; echo 'Port ${{ vars.SERVER_PORT }} not open'; exit 1"
