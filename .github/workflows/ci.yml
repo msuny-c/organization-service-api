@@ -118,13 +118,20 @@ jobs:
         run: |
             ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" <<'SSH'
-            set -euo pipefail
+            set -eu
             APP_DIR="$HOME/apps/organization-management"
             MINIO_DIR="$APP_DIR/minio"
             mkdir -p "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
 
             if [ ! -x "$MINIO_DIR/bin/minio" ]; then
-              curl -sSfL https://dl.min.io/server/minio/release/linux-amd64/minio -o "$MINIO_DIR/bin/minio"
+              OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+              ARCH="amd64"
+              case "$OS" in
+                freebsd) MINIO_URL="https://dl.min.io/server/minio/release/freebsd-${ARCH}/minio" ;;
+                linux) MINIO_URL="https://dl.min.io/server/minio/release/linux-${ARCH}/minio" ;;
+                *) echo "Unsupported OS: $OS"; exit 1 ;;
+              esac
+              curl -sSfL "$MINIO_URL" -o "$MINIO_DIR/bin/minio"
               chmod +x "$MINIO_DIR/bin/minio"
             fi
 
@@ -170,4 +177,4 @@ jobs:
         run: |
             ssh -n -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_key \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            'for i in $(jot 300); do nc -z 127.0.0.1 ${{ vars.SERVER_PORT }} && exit 0; sleep 1; done; echo "Port ${{ vars.SERVER_PORT }} not open"; exit 1'
+            "i=0; while [ \$i -lt 300 ]; do nc -z 127.0.0.1 ${{ vars.SERVER_PORT }} && exit 0; sleep 1; i=\$((i+1)); done; echo 'Port ${{ vars.SERVER_PORT }} not open'; exit 1"
