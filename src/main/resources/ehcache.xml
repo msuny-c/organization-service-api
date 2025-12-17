@@ -11,7 +11,7 @@
     </service>
 
     <cache alias="ru.itmo.organization.model.Organization">
-        <key-type>java.lang.Long</key-type>
+        <key-type>java.lang.Object</key-type>
         <value-type>ru.itmo.organization.model.Organization</value-type>
         <expiry>
             <ttl unit="minutes">10</ttl>
@@ -23,7 +23,7 @@
     </cache>
 
     <cache alias="ru.itmo.organization.model.Address">
-        <key-type>java.lang.Long</key-type>
+        <key-type>java.lang.Object</key-type>
         <value-type>ru.itmo.organization.model.Address</value-type>
         <expiry>
             <ttl unit="minutes">30</ttl>
@@ -35,7 +35,7 @@
     </cache>
 
     <cache alias="ru.itmo.organization.model.Location">
-        <key-type>java.lang.Long</key-type>
+        <key-type>java.lang.Object</key-type>
         <value-type>ru.itmo.organization.model.Location</value-type>
         <expiry>
             <ttl unit="minutes">30</ttl>
@@ -47,7 +47,7 @@
     </cache>
 
     <cache alias="ru.itmo.organization.model.Coordinates">
-        <key-type>java.lang.Long</key-type>
+        <key-type>java.lang.Object</key-type>
         <value-type>ru.itmo.organization.model.Coordinates</value-type>
         <expiry>
             <ttl unit="minutes">10</ttl>
@@ -59,7 +59,7 @@
     </cache>
 
     <cache alias="ru.itmo.organization.model.UserAccount">
-        <key-type>java.lang.Long</key-type>
+        <key-type>java.lang.Object</key-type>
         <value-type>ru.itmo.organization.model.UserAccount</value-type>
         <expiry>
             <ttl unit="minutes">60</ttl>
@@ -71,7 +71,7 @@
     </cache>
 
     <cache alias="ru.itmo.organization.model.ImportOperation">
-        <key-type>java.lang.Long</key-type>
+        <key-type>java.lang.Object</key-type>
         <value-type>ru.itmo.organization.model.ImportOperation</value-type>
         <expiry>
             <ttl unit="minutes">120</ttl>

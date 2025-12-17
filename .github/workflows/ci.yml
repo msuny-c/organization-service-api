@@ -121,7 +121,8 @@ jobs:
             set -eu
             APP_DIR="$HOME/apps/organization-management"
             MINIO_DIR="$APP_DIR/minio"
-            mkdir -p "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
+            mkdir -p "$APP_DIR" "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
+            echo "Using MINIO_DIR=$MINIO_DIR"
 
             if [ ! -x "$MINIO_DIR/bin/minio" ]; then
               OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -131,8 +132,17 @@ jobs:
                 linux) MINIO_URL="https://dl.min.io/server/minio/release/linux-${ARCH}/minio" ;;
                 *) echo "Unsupported OS: $OS"; exit 1 ;;
               esac
-              curl -sSfL "$MINIO_URL" -o "$MINIO_DIR/bin/minio"
+              echo "Downloading MinIO from $MINIO_URL"
+              if command -v curl >/dev/null 2>&1; then
+                curl -sSfL "$MINIO_URL" -o "$MINIO_DIR/bin/minio"
+              elif command -v fetch >/dev/null 2>&1; then
+                fetch -o "$MINIO_DIR/bin/minio" "$MINIO_URL"
+              else
+                echo "Neither curl nor fetch available"; exit 1
+              fi
               chmod +x "$MINIO_DIR/bin/minio"
+            else
+              echo "MinIO binary already present"
             fi
 
             ENV_FILE="$MINIO_DIR/minio.env"
@@ -144,6 +154,8 @@ jobs:
               set -a
               . "$APP_DIR/app.env"
               set +a
+            else
+              touch "$APP_DIR/app.env"
             fi
 
             MINIO_PORT="${MINIO_PORT:-9000}"
@@ -162,7 +174,9 @@ jobs:
             fi
 
             TMP="$APP_DIR/app.env.tmp"
-            grep -v "^MINIO_URL=" "$APP_DIR/app.env" > "$TMP" || true
+            if [ -f "$APP_DIR/app.env" ]; then
+              grep -v "^MINIO_URL=" "$APP_DIR/app.env" > "$TMP" || true
+            fi
             echo "MINIO_URL=http://127.0.0.1:${MINIO_PORT}" >> "$TMP"
             mv "$TMP" "$APP_DIR/app.env"
             SSH
