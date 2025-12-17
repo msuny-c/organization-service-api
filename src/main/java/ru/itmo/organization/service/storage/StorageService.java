@@ -90,7 +90,6 @@ public class StorageService {
                     .object(transaction.tempObjectName())
                     .build());
         } catch (Exception ignored) {
-            // best effort cleanup
         }
         try {
             minioClient.removeObject(RemoveObjectArgs.builder()
@@ -98,7 +97,6 @@ public class StorageService {
                     .object(transaction.finalObjectName())
                     .build());
         } catch (Exception ignored) {
-            // best effort cleanup
         }
     }
 

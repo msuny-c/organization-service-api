@@ -60,5 +60,10 @@ public class ImportOperation {
     public void markFailed(String message) {
         this.status = ImportStatus.FAILED;
         this.addedCount = null;
+        this.storageBucket = null;
+        this.storageObject = null;
+        this.storageFileName = null;
+        this.storageContentType = null;
+        this.storageSize = null;
     }
 }
