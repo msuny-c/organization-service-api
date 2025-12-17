@@ -51,19 +51,14 @@ public class ImportOperation {
     
     @Column(name = "storage_size")
     private Long storageSize;
-    
-    @Column(name = "error_message", length = 2048)
-    private String errorMessage;
 
     public void markSuccess(int added) {
         this.status = ImportStatus.SUCCESS;
         this.addedCount = added;
-        this.errorMessage = null;
     }
 
     public void markFailed(String message) {
         this.status = ImportStatus.FAILED;
         this.addedCount = null;
-        this.errorMessage = message;
     }
 }

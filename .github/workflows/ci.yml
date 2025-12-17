@@ -133,7 +133,7 @@ jobs:
           mkdir -p "$APP_DIR" "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
           echo "Using MINIO_DIR=$MINIO_DIR"
 
-          # Assume minio доступен в PATH на FreeBSD
+          # minio доступен в PATH на FreeBSD
           MINIO_BIN=$(command -v minio)
 
           ENV_FILE="$MINIO_DIR/minio.env"

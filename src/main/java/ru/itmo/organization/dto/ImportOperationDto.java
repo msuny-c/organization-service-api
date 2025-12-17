@@ -24,7 +24,6 @@ public class ImportOperationDto {
     private String storageFileName;
     private String storageContentType;
     private Long storageSize;
-    private String errorMessage;
 
     public static ImportOperationDto fromEntity(ImportOperation operation) {
         ImportOperationDto dto = new ImportOperationDto();
@@ -39,7 +38,6 @@ public class ImportOperationDto {
         dto.setStorageFileName(operation.getStorageFileName());
         dto.setStorageContentType(operation.getStorageContentType());
         dto.setStorageSize(operation.getStorageSize());
-        dto.setErrorMessage(operation.getErrorMessage());
         return dto;
     }
 
