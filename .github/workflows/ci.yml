@@ -143,8 +143,8 @@ jobs:
             esac
 
             case "$OS" in
-              freebsd) MINIO_URL="https://dl.min.io/server/minio/release/freebsd-${ARCH}/minio" ;;
-              linux)   MINIO_URL="https://dl.min.io/server/minio/release/linux-${ARCH}/minio" ;;
+              freebsd) MINIO_URL="https://dl.min.io/aistor/minio/release/linux-amd64/minio" ;;
+              linux)   MINIO_URL="https://dl.min.io/aistor/minio/release/linux-amd64/minio" ;;
               *) echo "Unsupported OS: $OS"; exit 1 ;;
             esac
 
