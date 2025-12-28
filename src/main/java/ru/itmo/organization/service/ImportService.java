@@ -103,8 +103,13 @@ public class ImportService {
         } catch (Exception ex) {
             storageService.rollback(storageTx);
             safeMarkFailed(operation, extractMessage(ex));
+            if (operation == null && ex instanceof StorageUnavailableException) {
+                operation = createFailedOperation(userContext.username(), objectType, file);
+            }
             webSocketService.broadcastImportsUpdate();
             if (ex instanceof StorageUnavailableException) {
+                log.error("Импорт не выполнен: хранилище недоступно (user={}, type={})",
+                        userContext.username(), objectType, ex);
                 throw (StorageUnavailableException) ex;
             }
             if (ex instanceof IllegalArgumentException) {
@@ -157,6 +162,20 @@ public class ImportService {
         operation.setStorageFileName(storageTx.originalFileName());
         operation.setStorageContentType(storageTx.contentType());
         operation.setStorageSize(storageTx.size());
+        return logTransactionTemplate.execute(status -> importOperationRepository.save(operation));
+    }
+
+    private ImportOperation createFailedOperation(String username, ImportObjectType type, MultipartFile file) {
+        ImportOperation operation = new ImportOperation();
+        operation.setUsername(username == null || username.isBlank() ? "anonymous" : username.trim());
+        operation.setStartedAt(LocalDateTime.now());
+        operation.setStatus(ImportStatus.FAILED);
+        operation.setObjectType(type == null ? ImportObjectType.ORGANIZATION : type);
+        if (file != null) {
+            operation.setStorageFileName(file.getOriginalFilename());
+            operation.setStorageContentType(file.getContentType());
+            operation.setStorageSize(file.getSize());
+        }
         return logTransactionTemplate.execute(status -> importOperationRepository.save(operation));
     }
 
