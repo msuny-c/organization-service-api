@@ -18,6 +18,7 @@ public class CoordinatesRepository {
     
     public List<Coordinates> findAll() {
         return entityManager.createQuery("SELECT c FROM Coordinates c", Coordinates.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
     }
     
@@ -58,6 +59,7 @@ public class CoordinatesRepository {
         List<Coordinates> coordinates = entityManager.createQuery(
                         "SELECT c FROM Coordinates c ORDER BY c." + pageable.getSort().toString().replace(":", " "),
                         Coordinates.class)
+                .setHint("org.hibernate.cacheable", true)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
@@ -65,6 +67,7 @@ public class CoordinatesRepository {
         Long total = entityManager.createQuery(
                         "SELECT COUNT(c) FROM Coordinates c",
                         Long.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getSingleResult();
 
         return new PageImpl<>(coordinates, pageable, total);

@@ -63,6 +63,7 @@ public class OrganizationRepository {
                         "WHERE o.id = :id",
                 Organization.class)
                 .setParameter("id", id)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
 
         return result.stream().findFirst();
@@ -104,6 +105,7 @@ public class OrganizationRepository {
                         "LEFT JOIN FETCH pa.town " +
                         "ORDER BY o.coordinates.x ASC, o.coordinates.y ASC",
                 Organization.class)
+                .setHint("org.hibernate.cacheable", true)
                 .setMaxResults(1)
                 .getResultStream().findFirst();
     }
@@ -113,6 +115,7 @@ public class OrganizationRepository {
                 "SELECT o.rating, COUNT(o) FROM Organization o " +
                         "WHERE o.rating IS NOT NULL GROUP BY o.rating ORDER BY o.rating",
                 Object[].class)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
     }
 
@@ -121,6 +124,7 @@ public class OrganizationRepository {
                 "SELECT COUNT(o) FROM Organization o WHERE o.type = :type",
                 Long.class)
                 .setParameter("type", type)
+                .setHint("org.hibernate.cacheable", true)
                 .getSingleResult();
     }
 
@@ -134,7 +138,9 @@ public class OrganizationRepository {
             countQuery.where(countPredicate);
         }
         countQuery.select(cb.countDistinct(countRoot));
-        long total = entityManager.createQuery(countQuery).getSingleResult();
+        long total = entityManager.createQuery(countQuery)
+                .setHint("org.hibernate.cacheable", true)
+                .getSingleResult();
         if (total == 0) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
@@ -163,6 +169,7 @@ public class OrganizationRepository {
         applySort(pageable.getSort(), cb, idQuery, idRoot);
 
         List<Object[]> results = entityManager.createQuery(idQuery)
+                .setHint("org.hibernate.cacheable", true)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
@@ -248,6 +255,7 @@ public class OrganizationRepository {
                         "WHERE o.id IN :ids",
                 Organization.class)
                 .setParameter("ids", ids);
+        query.setHint("org.hibernate.cacheable", true);
 
         List<Organization> content = query.getResultList();
         Map<Long, Integer> positions = new HashMap<>();

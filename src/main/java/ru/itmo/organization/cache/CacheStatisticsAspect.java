@@ -21,6 +21,7 @@ public class CacheStatisticsAspect {
     private final Statistics statistics;
     private final AtomicLong lastHitCount = new AtomicLong(0);
     private final AtomicLong lastMissCount = new AtomicLong(0);
+    private final AtomicLong lastPutCount = new AtomicLong(0);
 
     @Pointcut("execution(* ru.itmo.organization.repository..*(..)) || execution(* ru.itmo.organization.service..*(..))")
     public void monitoredOperations() {}
@@ -33,14 +34,13 @@ public class CacheStatisticsAspect {
 
         long hits = statistics.getSecondLevelCacheHitCount();
         long misses = statistics.getSecondLevelCacheMissCount();
+        long puts = statistics.getSecondLevelCachePutCount();
 
         long hitDelta = hits - lastHitCount.getAndSet(hits);
         long missDelta = misses - lastMissCount.getAndSet(misses);
+        long putDelta = puts - lastPutCount.getAndSet(puts);
 
-        if (hitDelta == 0 && missDelta == 0) {
-            return;
-        }
-
-        log.info("L2 Cache stats: hits={}, misses={}, hitDelta={}, missDelta={}", hits, misses, hitDelta, missDelta);
+        log.info("L2 Cache stats: hits={}, misses={}, puts={}, hitDelta={}, missDelta={}, putDelta={}",
+                hits, misses, puts, hitDelta, missDelta, putDelta);
     }
 }

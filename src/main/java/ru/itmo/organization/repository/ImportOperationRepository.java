@@ -29,6 +29,7 @@ public class ImportOperationRepository {
         return entityManager.createQuery(
                         "SELECT o FROM ImportOperation o ORDER BY o.startedAt DESC",
                         ImportOperation.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
     }
 
@@ -37,6 +38,7 @@ public class ImportOperationRepository {
                         "SELECT o FROM ImportOperation o WHERE o.username = :username ORDER BY o.startedAt DESC",
                         ImportOperation.class)
                 .setParameter("username", username)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
     }
 }

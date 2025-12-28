@@ -21,6 +21,7 @@ public class AddressRepository {
                         "SELECT DISTINCT a FROM Address a " +
                         "LEFT JOIN FETCH a.town",
                         Address.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
     }
     
@@ -62,6 +63,7 @@ public class AddressRepository {
                         "SELECT DISTINCT a FROM Address a " +
                         "LEFT JOIN FETCH a.town",
                         Address.class)
+                .setHint("org.hibernate.cacheable", true)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
@@ -69,6 +71,7 @@ public class AddressRepository {
         Long total = entityManager.createQuery(
                         "SELECT COUNT(DISTINCT a) FROM Address a",
                         Long.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getSingleResult();
 
         return new PageImpl<>(addresses, pageable, total);
@@ -87,12 +90,14 @@ public class AddressRepository {
 
         List<Address> addresses = entityManager.createQuery(jpql, Address.class)
                 .setParameter("search", "%" + searchTerm + "%")
+                .setHint("org.hibernate.cacheable", true)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
 
         Long total = entityManager.createQuery(countJpql, Long.class)
                 .setParameter("search", "%" + searchTerm + "%")
+                .setHint("org.hibernate.cacheable", true)
                 .getSingleResult();
 
         return new PageImpl<>(addresses, pageable, total);

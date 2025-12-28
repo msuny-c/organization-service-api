@@ -18,6 +18,7 @@ public class LocationRepository {
     
     public List<Location> findAll() {
         return entityManager.createQuery("SELECT l FROM Location l", Location.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getResultList();
     }
     
@@ -72,6 +73,7 @@ public class LocationRepository {
         List<Location> locations = entityManager.createQuery(
                         "SELECT l FROM Location l ORDER BY l." + pageable.getSort().toString().replace(":", " "),
                         Location.class)
+                .setHint("org.hibernate.cacheable", true)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
@@ -79,6 +81,7 @@ public class LocationRepository {
         Long total = entityManager.createQuery(
                         "SELECT COUNT(l) FROM Location l",
                         Long.class)
+                .setHint("org.hibernate.cacheable", true)
                 .getSingleResult();
 
         return new PageImpl<>(locations, pageable, total);
@@ -96,12 +99,14 @@ public class LocationRepository {
 
         List<Location> locations = entityManager.createQuery(jpql, Location.class)
                 .setParameter("search", "%" + searchTerm + "%")
+                .setHint("org.hibernate.cacheable", true)
                 .setFirstResult((int) pageable.getOffset())
                 .setMaxResults(pageable.getPageSize())
                 .getResultList();
 
         Long total = entityManager.createQuery(countJpql, Long.class)
                 .setParameter("search", "%" + searchTerm + "%")
+                .setHint("org.hibernate.cacheable", true)
                 .getSingleResult();
 
         return new PageImpl<>(locations, pageable, total);
