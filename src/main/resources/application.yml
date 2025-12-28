@@ -67,4 +67,4 @@ minio:
 app:
   cache:
     statistics:
-      logging-enabled: ${CACHE_STATS_LOGGING:false}
+      logging-enabled: ${CACHE_STATS_LOGGING:true}
