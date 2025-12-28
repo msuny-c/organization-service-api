@@ -2,7 +2,6 @@ package ru.itmo.organization.repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
@@ -12,7 +11,6 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,20 +51,7 @@ public class OrganizationRepository {
     }
 
     public Optional<Organization> findByIdWithDetails(Long id) {
-        List<Organization> result = entityManager.createQuery(
-                "SELECT DISTINCT o FROM Organization o " +
-                        "LEFT JOIN FETCH o.coordinates " +
-                        "LEFT JOIN FETCH o.officialAddress oa " +
-                        "LEFT JOIN FETCH oa.town " +
-                        "LEFT JOIN FETCH o.postalAddress pa " +
-                        "LEFT JOIN FETCH pa.town " +
-                        "WHERE o.id = :id",
-                Organization.class)
-                .setParameter("id", id)
-                .setHint("org.hibernate.cacheable", true)
-                .getResultList();
-
-        return result.stream().findFirst();
+        return Optional.ofNullable(entityManager.find(Organization.class, id));
     }
 
     public Organization save(Organization organization) {
@@ -245,24 +230,13 @@ public class OrganizationRepository {
     }
 
     private List<Organization> fetchOrganizationsWithDetails(List<Long> ids) {
-        TypedQuery<Organization> query = entityManager.createQuery(
-                "SELECT DISTINCT o FROM Organization o " +
-                        "LEFT JOIN FETCH o.coordinates " +
-                        "LEFT JOIN FETCH o.officialAddress oa " +
-                        "LEFT JOIN FETCH oa.town " +
-                        "LEFT JOIN FETCH o.postalAddress pa " +
-                        "LEFT JOIN FETCH pa.town " +
-                        "WHERE o.id IN :ids",
-                Organization.class)
-                .setParameter("ids", ids);
-        query.setHint("org.hibernate.cacheable", true);
-
-        List<Organization> content = query.getResultList();
-        Map<Long, Integer> positions = new HashMap<>();
-        for (int i = 0; i < ids.size(); i++) {
-            positions.put(ids.get(i), i);
+        List<Organization> content = new ArrayList<>(ids.size());
+        for (Long id : ids) {
+            Organization organization = entityManager.find(Organization.class, id);
+            if (organization != null) {
+                content.add(organization);
+            }
         }
-        content.sort(Comparator.comparingInt(o -> positions.getOrDefault(o.getId(), Integer.MAX_VALUE)));
         return content;
     }
 
