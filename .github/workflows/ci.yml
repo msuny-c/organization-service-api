@@ -149,8 +149,8 @@ jobs:
             touch "$APP_DIR/app.env"
           fi
 
-          MINIO_PORT="${MINIO_PORT:-9000}"
-          MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-9001}"
+          MINIO_PORT="${MINIO_PORT:-50330}"
+          MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-50332}"
           echo "MINIO_PORT=$MINIO_PORT" > "$ENV_FILE"
           echo "MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT" >> "$ENV_FILE"
 
