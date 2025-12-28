@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.itmo.organization.dto.ImportOperationDto;
 import ru.itmo.organization.dto.OrganizationDto;
 import ru.itmo.organization.exception.ResourceNotFoundException;
+import ru.itmo.organization.exception.StorageUnavailableException;
 import ru.itmo.organization.model.ImportObjectType;
 import ru.itmo.organization.model.ImportOperation;
 import ru.itmo.organization.model.ImportStatus;
@@ -103,6 +104,9 @@ public class ImportService {
             storageService.rollback(storageTx);
             safeMarkFailed(operation, extractMessage(ex));
             webSocketService.broadcastImportsUpdate();
+            if (ex instanceof StorageUnavailableException) {
+                throw (StorageUnavailableException) ex;
+            }
             if (ex instanceof IllegalArgumentException) {
                 throw ex;
             }

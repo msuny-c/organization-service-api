@@ -51,6 +51,16 @@ public class RestExceptionHandler {
         return Map.of("error", "Конфликт параллельных изменений. Повторите запрос.");
     }
 
+    @ExceptionHandler(StorageUnavailableException.class)
+    public ResponseEntity<Map<String, String>> handleStorageUnavailable(StorageUnavailableException ex) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "Хранилище временно недоступно. Повторите попытку позже.";
+        }
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("error", message));
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, String> handleNoResourceFound(NoResourceFoundException ex) {

@@ -9,18 +9,25 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ru.itmo.organization.config.MinioProperties;
+import ru.itmo.organization.exception.StorageUnavailableException;
 
 @Service
 @RequiredArgsConstructor
 public class StorageService {
 
     private static final long DEFAULT_PART_SIZE = 10 * 1024 * 1024;
+    private static final String STORAGE_UNAVAILABLE_MESSAGE =
+            "Хранилище временно недоступно. Повторите попытку позже.";
 
     private final MinioClient minioClient;
     private final MinioProperties properties;
@@ -54,7 +61,7 @@ public class StorageService {
                     contentType
             );
         } catch (Exception ex) {
-            throw new IllegalStateException("Не удалось сохранить файл в хранилище: " + ex.getMessage(), ex);
+            throw wrapStorageException("Не удалось сохранить файл в хранилище", ex);
         }
     }
 
@@ -76,7 +83,7 @@ public class StorageService {
                     .object(transaction.tempObjectName())
                     .build());
         } catch (Exception ex) {
-            throw new IllegalStateException("Не удалось зафиксировать файл в хранилище: " + ex.getMessage(), ex);
+            throw wrapStorageException("Не удалось зафиксировать файл в хранилище", ex);
         }
     }
 
@@ -108,6 +115,9 @@ public class StorageService {
                     .build());
             return new StorageStream(stream, fallbackName, contentType);
         } catch (Exception ex) {
+            if (isConnectionIssue(ex)) {
+                throw new StorageUnavailableException(STORAGE_UNAVAILABLE_MESSAGE, ex);
+            }
             throw new IllegalArgumentException("Файл не найден в хранилище");
         }
     }
@@ -123,7 +133,7 @@ public class StorageService {
                         .build());
             }
         } catch (Exception ex) {
-            throw new IllegalStateException("Не удалось подготовить бакет MinIO: " + ex.getMessage(), ex);
+            throw wrapStorageException("Не удалось подготовить бакет хранилища", ex);
         }
     }
 
@@ -136,5 +146,34 @@ public class StorageService {
             return cleaned.substring(cleaned.length() - 120);
         }
         return cleaned;
+    }
+
+    private RuntimeException wrapStorageException(String message, Exception ex) {
+        if (isConnectionIssue(ex)) {
+            return new StorageUnavailableException(STORAGE_UNAVAILABLE_MESSAGE, ex);
+        }
+        return new IllegalStateException(message, ex);
+    }
+
+    private boolean isConnectionIssue(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof ConnectException
+                    || current instanceof SocketTimeoutException
+                    || current instanceof UnknownHostException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase(Locale.ROOT);
+                if (lower.contains("failed to connect")
+                        || lower.contains("connection refused")
+                        || lower.contains("connect timed out")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }
