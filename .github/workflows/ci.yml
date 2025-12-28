@@ -129,7 +129,7 @@ jobs:
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" 'bash -se' <<'SSH'
           set -euo pipefail
           APP_DIR="$HOME/apps/organization-management"
-          MINIO_DIR="$APP_DIR/minio"
+          MINIO_DIR="$HOME/minio"
           mkdir -p "$APP_DIR" "$MINIO_DIR/bin" "$MINIO_DIR/data" "$MINIO_DIR/logs"
           echo "Using MINIO_DIR=$MINIO_DIR"
 
